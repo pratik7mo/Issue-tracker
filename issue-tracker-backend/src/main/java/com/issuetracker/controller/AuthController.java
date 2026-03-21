@@ -1,0 +1,84 @@
+package com.issuetracker.controller;
+
+import com.issuetracker.dto.AuthRequest;
+import com.issuetracker.dto.AuthResponse;
+import com.issuetracker.dto.RegisterRequestDto;
+import com.issuetracker.dto.RegisterResponseDto;
+import com.issuetracker.entity.User;
+import com.issuetracker.repo.UserRepository;
+import com.issuetracker.security.CustomUserDetailsService;
+import com.issuetracker.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthenticationManager authenticationManager;
+    private final CustomUserDetailsService userDetailsService;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
+        
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        final String jwt = jwtUtil.generateToken(userDetails);
+        
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        
+        return ResponseEntity.ok(AuthResponse.builder()
+                .token(jwt)
+                .email(user.getEmail())
+                .name(user.getName())
+                .role(user.getRole().name())
+                .build());
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterRequestDto request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().body(
+                RegisterResponseDto.builder()
+                    .message("Email already exists")
+                    .build()
+            );
+        }
+
+        User user = User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole() != null ? request.getRole() : com.issuetracker.enums.Role.DEVELOPER) 
+                .build();
+                
+        userRepository.save(user);
+        
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        final String jwt = jwtUtil.generateToken(userDetails);
+        
+        return ResponseEntity.ok(
+            RegisterResponseDto.builder()
+                .message("User registered successfully")
+                .token(jwt)
+                .email(user.getEmail())
+                .name(user.getName())
+                .role(user.getRole().name())
+                .build()
+        );
+    }
+}
