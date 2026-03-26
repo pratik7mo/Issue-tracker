@@ -9,6 +9,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-7894}
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
 
   backend:
     build:
