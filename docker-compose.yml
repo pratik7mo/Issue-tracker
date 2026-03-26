@@ -12,9 +12,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
-
   backend:
     build:
       context: ./issue-tracker-backend
@@ -34,3 +31,6 @@ volumes:
       - "80:80"
     depends_on:
       - backend
+
+volumes:
+  postgres_data:
