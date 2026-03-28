@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const App: React.FC = () => {
   return (
@@ -14,12 +16,14 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="issues" element={<Issues />} />
           </Route>
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

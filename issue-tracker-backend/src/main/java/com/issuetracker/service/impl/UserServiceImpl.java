@@ -3,26 +3,32 @@ package com.issuetracker.service.impl;
 import com.issuetracker.dto.UserResponse;
 import com.issuetracker.entity.User;
 import com.issuetracker.repo.UserRepository;
+import com.issuetracker.repo.PasswordResetTokenRepository;
+import com.issuetracker.entity.PasswordResetToken;
+import com.issuetracker.mapper.UserMapper;
 import com.issuetracker.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordResetTokenRepository tokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     @Override
     public UserResponse getCurrentUserProfile(String email) {
         User user = findByEmail(email);
-        return UserResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .build();
+        return userMapper.toResponse(user);
     }
 
     @Override
@@ -34,12 +40,45 @@ public class UserServiceImpl implements UserService {
     @Override
     public java.util.List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> UserResponse.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .role(user.getRole())
-                        .build())
+                .map(userMapper::toResponse)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void createPasswordResetTokenForUser(User user, String token) {
+        tokenRepository.deleteByUser(user); // Remove any existing token
+        PasswordResetToken myToken = PasswordResetToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusHours(24))
+                .build();
+        tokenRepository.save(myToken);
+    }
+
+    @Override
+    public String validatePasswordResetToken(String token) {
+        Optional<PasswordResetToken> passToken = tokenRepository.findByToken(token);
+
+        if (passToken.isEmpty()) {
+            return "invalidToken";
+        }
+        if (passToken.get().isExpired()) {
+            return "expired";
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional
+    public void changeUserPassword(User user, String newPassword) {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        tokenRepository.deleteByUser(user);
+    }
+
+    @Override
+    public Optional<PasswordResetToken> findResetToken(String token) {
+        return tokenRepository.findByToken(token);
     }
 }
