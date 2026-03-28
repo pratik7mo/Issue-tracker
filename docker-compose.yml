@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d issue_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -22,7 +27,8 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:-7894}
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
   frontend:
     build: ./issue-tracker-frontend
