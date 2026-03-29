@@ -95,22 +95,70 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public com.issuetracker.dto.DashboardStatsDto getStats() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String currentEmail = auth.getName();
+        User currentUser = userRepository.findByEmail(currentEmail).orElse(null);
+
         List<Issue> allIssues = issueRepository.findAll();
-        
+        java.time.LocalDateTime overdueLimit = java.time.LocalDateTime.now().minusDays(7);
+
         java.util.Map<String, Long> typeDist = allIssues.stream()
-            .collect(Collectors.groupingBy(i -> i.getIssueType() != null ? i.getIssueType().name() : "UNKNOWN", Collectors.counting()));
-            
+                .collect(Collectors.groupingBy(i -> i.getIssueType() != null ? i.getIssueType().name() : "UNKNOWN",
+                        Collectors.counting()));
+
         java.util.Map<String, Long> statusDist = allIssues.stream()
-            .collect(Collectors.groupingBy(i -> i.getStatus() != null ? i.getStatus().name() : "UNKNOWN", Collectors.counting()));
+                .collect(Collectors.groupingBy(i -> i.getStatus() != null ? i.getStatus().name() : "UNKNOWN",
+                        Collectors.counting()));
+
+        java.util.Map<String, Long> priorityDist = allIssues.stream()
+                .collect(Collectors.groupingBy(i -> i.getPriority() != null ? i.getPriority().name() : "UNKNOWN",
+                        Collectors.counting()));
+
+        com.issuetracker.dto.MyAssignedStatsDto myStats = com.issuetracker.dto.MyAssignedStatsDto.builder().build();
+        if (currentUser != null) {
+            myStats.setTotalAssigned(issueRepository.findByAssignedToUser(currentUser).size());
+            myStats.setOpenCount(issueRepository
+                    .findByAssignedToUserAndStatus(currentUser, com.issuetracker.enums.Status.OPEN).size());
+            myStats.setInProgressCount(issueRepository
+                    .findByAssignedToUserAndStatus(currentUser, com.issuetracker.enums.Status.IN_PROGRESS).size());
+            myStats.setOverdueCount(issueRepository.findOverdueIssues(overdueLimit).stream()
+                    .filter(i -> i.getAssignedToUser() != null
+                            && i.getAssignedToUser().getId().equals(currentUser.getId()))
+                    .count());
+        }
+
+        List<com.issuetracker.dto.ActivityDto> recentActivity = allIssues.stream()
+                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
+                .limit(5)
+                .map(i -> com.issuetracker.dto.ActivityDto.builder()
+                        .issueId(i.getId())
+                        .action("Updated State") // Simulating activity for now
+                        .time(i.getUpdatedAt())
+                        .icon("alert-circle")
+                        .build())
+                .collect(Collectors.toList());
+
+        List<com.issuetracker.dto.IssueResponseDto> recentIssues = issueRepository.findTop5ByOrderByCreatedAtDesc()
+                .stream()
+                .map(issueMapper::mapToResponse)
+                .collect(Collectors.toList());
 
         return com.issuetracker.dto.DashboardStatsDto.builder()
-                .totalIssues(issueRepository.count())
+                .totalIssues(allIssues.size())
+                .openIssues(issueRepository.countByStatus(com.issuetracker.enums.Status.OPEN))
                 .inProgressIssues(issueRepository.countByStatus(com.issuetracker.enums.Status.IN_PROGRESS))
                 .resolvedIssues(issueRepository.countByStatus(com.issuetracker.enums.Status.RESOLVED))
-                .highPriorityIssues(issueRepository.countByPriority(com.issuetracker.enums.Priority.HIGH) + 
-                                   issueRepository.countByPriority(com.issuetracker.enums.Priority.CRITICAL))
+                .highPriorityIssues(issueRepository.countByPriority(com.issuetracker.enums.Priority.HIGH))
+                .criticalIssues(issueRepository.countByPriority(com.issuetracker.enums.Priority.CRITICAL))
+                .overdueIssues(issueRepository.findOverdueIssues(overdueLimit).size())
+                .unassignedIssues(issueRepository.countByAssignedToUserIsNull())
                 .typeDistribution(typeDist)
                 .statusDistribution(statusDist)
+                .priorityDistribution(priorityDist)
+                .myAssignedIssues(myStats)
+                .recentActivity(recentActivity)
+                .recentlyCreatedIssues(recentIssues)
                 .build();
     }
 
