@@ -47,12 +47,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void createPasswordResetTokenForUser(User user, String token) {
-        tokenRepository.deleteByUser(user); // Remove any existing token
-        PasswordResetToken myToken = PasswordResetToken.builder()
-                .token(token)
-                .user(user)
-                .expiryDate(LocalDateTime.now().plusHours(24))
-                .build();
+        PasswordResetToken myToken = tokenRepository.findByUser(user)
+                .map(t -> {
+                    t.setToken(token);
+                    t.setExpiryDate(LocalDateTime.now().plusHours(24));
+                    return t;
+                })
+                .orElseGet(() -> PasswordResetToken.builder()
+                        .token(token)
+                        .user(user)
+                        .expiryDate(LocalDateTime.now().plusHours(24))
+                        .build());
         tokenRepository.save(myToken);
     }
 
