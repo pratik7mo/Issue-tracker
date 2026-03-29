@@ -15,6 +15,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.username}")
+    private String fromEmail;
+
     @Async
     public void sendEmail(String to, String subject, String body) {
         try {
@@ -22,7 +25,7 @@ public class EmailService {
             message.setTo(to);
             message.setSubject(subject);
             message.setText(body);
-            message.setFrom("issue-tracker@no-reply.com");
+            message.setFrom(fromEmail);
             mailSender.send(message);
             log.info("Email sent successfully to {}", to);
         } catch (MailException e) {
