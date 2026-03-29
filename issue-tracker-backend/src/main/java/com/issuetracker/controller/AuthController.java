@@ -6,6 +6,7 @@ import com.issuetracker.dto.ForgotPasswordRequest;
 import com.issuetracker.dto.RegisterRequestDto;
 import com.issuetracker.dto.RegisterResponseDto;
 import com.issuetracker.dto.ResetPasswordRequest;
+import com.issuetracker.dto.ApiResponse;
 import com.issuetracker.entity.User;
 import com.issuetracker.repo.UserRepository;
 import com.issuetracker.security.CustomUserDetailsService;
@@ -87,14 +88,17 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         User user = userRepository.findByEmail(request.getEmail()).orElse(null);
-        if (user != null) {
-            String token = UUID.randomUUID().toString();
-            userService.createPasswordResetTokenForUser(user, token);
-            String resetUrl = "http://localhost:8085/reset-password?token=" + token;
-            emailService.sendEmail(user.getEmail(), "Password Reset Request",
-                    "To reset your password, click the link below:\n" + resetUrl);
+        if (user == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Account not registered with this ID",
+                    org.springframework.http.HttpStatus.BAD_REQUEST));
         }
-        // Always return OK to avoid email enumeration
+
+        String token = UUID.randomUUID().toString();
+        userService.createPasswordResetTokenForUser(user, token);
+        String resetUrl = "http://localhost:8085/reset-password?token=" + token;
+        emailService.sendEmail(user.getEmail(), "Password Reset Request",
+                "To reset your password, click the link below:\n" + resetUrl);
+
         return ResponseEntity.ok("If an account with that email exists, we have sent a reset link.");
     }
 
