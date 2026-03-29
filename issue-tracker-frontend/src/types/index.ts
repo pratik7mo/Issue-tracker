@@ -68,3 +68,11 @@ export interface DashboardStats {
   recentActivity: Activity[];
   recentlyCreatedIssues: Issue[];
 }
+
+export interface UserLeaderboard {
+  id: number;
+  name: string;
+  email: string;
+  resolvedCount: number;
+}
+

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Eye, ExternalLink, Calendar, User, Tag, AlertCircle } from 'lucide-react';
+import { Eye, Calendar, Tag, AlertCircle } from 'lucide-react';
 import type { Issue } from '../../types';
 import { format } from 'date-fns';
 

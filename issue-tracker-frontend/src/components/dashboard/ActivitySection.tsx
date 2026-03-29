@@ -1,5 +1,7 @@
-import React from 'react';
-import { Activity as ActivityIcon, MessageSquare, PlusCircle, RefreshCw, CheckCircle2, UserPlus } from 'lucide-react';
+import {
+    Activity as ActivityIcon, MessageSquare, PlusCircle,
+    RefreshCw, CheckCircle2, UserPlus, AlertTriangle
+} from 'lucide-react';
 import type { Activity } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -71,5 +73,4 @@ const ActivitySection: React.FC<ActivitySectionProps> = ({ activities, isLoading
     );
 };
 
-import { AlertTriangle } from 'lucide-react';
 export default ActivitySection;
