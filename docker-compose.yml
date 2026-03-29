@@ -30,6 +30,4 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-
-volumes:
-  # No volumes needed for local DB
+# No volumes needed for local DB
