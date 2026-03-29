@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Plus, Filter, Download,
+Plus, Filter, Download,
   Ticket, Clock, CheckCircle2, AlertTriangle, AlertCircle,
-  Users, Activity as ActivityIcon, Calendar
+  Activity as ActivityIcon, Calendar
 } from 'lucide-react';
 import api from '../api/axios';
 import type { DashboardStats, UserLeaderboard } from '../types';

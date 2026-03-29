@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend, AreaChart, Area
+    PieChart, Pie, Cell, Legend
 } from 'recharts';
 
 interface ChartCardProps {
