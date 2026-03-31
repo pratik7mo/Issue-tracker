@@ -9,6 +9,7 @@ pipeline {
         DB_PASSWORD = credentials('db-password')
         MAIL_USERNAME = credentials('mail-username')
         MAIL_PASSWORD = credentials('mail-password')
+        VITE_API_BASE_URL = credentials('vite-api-url')
     }
 
     stages {
@@ -45,7 +46,7 @@ pipeline {
                 dir('issue-tracker-frontend') {
                     sh 'npm install'
                     sh 'npm run lint'
-                    sh 'npm run build'
+                    sh "VITE_API_BASE_URL=${VITE_API_BASE_URL} npm run build"
                 }
             }
         }
@@ -99,5 +100,6 @@ MAIL_PASSWORD=${MAIL_PASSWORD}
         }
     }
 }
+
 
 
