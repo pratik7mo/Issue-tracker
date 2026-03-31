@@ -24,7 +24,8 @@ pipeline {
         stage('Backend: Build & Test') {
             steps {
                 dir('issue-tracker-backend') {
-                    sh './mvnw clean package'
+                    // Use mvnw.cmd for Windows agents
+                    bat 'mvnw.cmd clean package -DskipTests'
                 }
             }
             post {
@@ -38,7 +39,7 @@ pipeline {
         stage('Backend: Docker Build') {
             steps {
                 dir('issue-tracker-backend') {
-                    sh "docker build -t ${BACKEND_IMAGE}:latest -t ${BACKEND_IMAGE}:${env.BUILD_NUMBER} ."
+                    bat "docker build -t %BACKEND_IMAGE%:latest -t %BACKEND_IMAGE%:%BUILD_NUMBER% ."
                 }
             }
         }
@@ -46,9 +47,10 @@ pipeline {
         stage('Frontend: Build & Lint') {
             steps {
                 dir('issue-tracker-frontend') {
-                    sh 'npm install'
-                    sh 'npm run lint'
-                    sh "VITE_API_BASE_URL=${VITE_API_BASE_URL} npm run build"
+                    bat 'npm install'
+                    bat 'npm run lint'
+                    // In Windows bat, VITE_API_BASE_URL must be set before run
+                    bat "set VITE_API_BASE_URL=%VITE_API_BASE_URL% && npm run build"
                 }
             }
         }
@@ -56,13 +58,14 @@ pipeline {
         stage('Frontend: Docker Build') {
             steps {
                 dir('issue-tracker-frontend') {
-                    sh "docker build -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${env.BUILD_NUMBER} ."
+                    bat "docker build -t %FRONTEND_IMAGE%:latest -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ."
                 }
             }
         }
 
         stage('Create Env File') {
             steps {
+                // Ensure .env is created in the root (where docker-compose.yml is)
                 writeFile file: '.env', text: """
 DB_URL=${DB_URL}
 DB_USERNAME=${DB_USERNAME}
@@ -73,7 +76,8 @@ VITE_API_BASE_URL=${VITE_API_BASE_URL}
 REDIS_HOST=${REDIS_HOST}
 REDIS_PORT=${REDIS_PORT}
 """
-                // Debug: Verify the file was created and contains values
+                // Verify the file was created in the correct location
+                bat 'dir .env'
                 bat 'type .env'
             }
         }
@@ -86,7 +90,6 @@ REDIS_PORT=${REDIS_PORT}
                 """
             }
         }
-
 
         stage('Clean Workspace') {
             steps {
@@ -108,6 +111,7 @@ REDIS_PORT=${REDIS_PORT}
         }
     }
 }
+
 
 
 
