@@ -60,17 +60,19 @@ pipeline {
 
         stage('Deploy Stack') {
             steps {
-                sh """
-                docker-compose down || true
-                DB_URL=${DB_URL} \
-                DB_USERNAME=${DB_USERNAME} \
-                DB_PASSWORD=${DB_PASSWORD} \
-                MAIL_USERNAME=${MAIL_USERNAME} \
-                MAIL_PASSWORD=${MAIL_PASSWORD} \
-                docker-compose up -d
+                bat """
+                set DB_URL=${DB_URL}
+                set DB_USERNAME=${DB_USERNAME}
+                set DB_PASSWORD=${DB_PASSWORD}
+                set MAIL_USERNAME=${MAIL_USERNAME}
+                set MAIL_PASSWORD=${MAIL_PASSWORD}
+                
+                docker-compose down --remove-orphans || true
+                docker-compose up -d --build
                 """
             }
         }
+
 
         stage('Clean Workspace') {
             steps {
