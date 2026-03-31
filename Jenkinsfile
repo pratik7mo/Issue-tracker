@@ -65,8 +65,8 @@ pipeline {
 
         stage('Create Env File') {
             steps {
-                // Create .env inside the backend folder as requested
-                writeFile file: 'issue-tracker-backend/.env', text: """
+                // Return .env to the root (same folder as docker-compose.yml)
+                writeFile file: '.env', text: """
 DB_URL=${DB_URL}
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
@@ -76,17 +76,17 @@ VITE_API_BASE_URL=${VITE_API_BASE_URL}
 REDIS_HOST=${REDIS_HOST}
 REDIS_PORT=${REDIS_PORT}
 """
-                // Verify the file was created in the correct location
-                bat 'dir issue-tracker-backend\\.env'
-                bat 'type issue-tracker-backend\\.env'
+                // Verify the file was created in the root
+                bat 'dir .env'
+                bat 'type .env'
             }
         }
 
         stage('Deploy Stack') {
             steps {
                 bat """
-                docker-compose --env-file issue-tracker-backend/.env down --remove-orphans || true
-                docker-compose --env-file issue-tracker-backend/.env up -d --build
+                docker-compose --env-file .env down --remove-orphans || true
+                docker-compose --env-file .env up -d --build
                 """
             }
         }
@@ -101,7 +101,7 @@ REDIS_PORT=${REDIS_PORT}
     post {
         always {
             // Delete the temporary .env file for security
-            bat 'if exist issue-tracker-backend\\.env del issue-tracker-backend\\.env'
+            bat 'if exist .env del .env'
         }
         success {
             echo 'Pipeline completed successfully and stack deployed!'
@@ -111,6 +111,7 @@ REDIS_PORT=${REDIS_PORT}
         }
     }
 }
+
 
 
 
