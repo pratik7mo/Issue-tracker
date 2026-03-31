@@ -10,6 +10,8 @@ pipeline {
         MAIL_USERNAME = credentials('mail-username')
         MAIL_PASSWORD = credentials('mail-password')
         VITE_API_BASE_URL = credentials('vite-api-url')
+        REDIS_HOST = "redis"
+        REDIS_PORT = "6379"
     }
 
     stages {
@@ -68,6 +70,8 @@ DB_PASSWORD=${DB_PASSWORD}
 MAIL_USERNAME=${MAIL_USERNAME}
 MAIL_PASSWORD=${MAIL_PASSWORD}
 VITE_API_BASE_URL=${VITE_API_BASE_URL}
+REDIS_HOST=${REDIS_HOST}
+REDIS_PORT=${REDIS_PORT}
 """
                 // Debug: Verify the file was created and contains values
                 bat 'type .env'
@@ -82,7 +86,6 @@ VITE_API_BASE_URL=${VITE_API_BASE_URL}
                 """
             }
         }
-
 
         stage('Clean Workspace') {
             steps {
@@ -104,6 +107,7 @@ VITE_API_BASE_URL=${VITE_API_BASE_URL}
         }
     }
 }
+
 
 
 
