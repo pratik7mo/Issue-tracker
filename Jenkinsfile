@@ -67,7 +67,10 @@ DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
 MAIL_USERNAME=${MAIL_USERNAME}
 MAIL_PASSWORD=${MAIL_PASSWORD}
+VITE_API_BASE_URL=${VITE_API_BASE_URL}
 """
+                // Debug: Verify the file was created and contains values
+                bat 'type .env'
             }
         }
 
@@ -79,6 +82,7 @@ MAIL_PASSWORD=${MAIL_PASSWORD}
                 """
             }
         }
+
 
         stage('Clean Workspace') {
             steps {
