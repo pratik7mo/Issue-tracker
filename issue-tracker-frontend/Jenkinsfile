@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+
+    environment {
+        FRONTEND_IMAGE = "issue-tracker-frontend"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Frontend: Setup & Build') {
+            steps {
+                sh 'npm install'
+                sh 'npm run lint'
+                sh 'npm run build'
+            }
+        }
+
+        stage('Frontend: Docker Build') {
+            steps {
+                sh "docker build -t ${FRONTEND_IMAGE}:${env.BUILD_NUMBER} ."
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Frontend build successful!'
+        }
+        failure {
+            echo 'Frontend build failed.'
+        }
+    }
+}
