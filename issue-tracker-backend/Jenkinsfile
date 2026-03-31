@@ -6,6 +6,7 @@ pipeline {
         DB_URL = credentials('db-url')
         DB_USERNAME = credentials('db-username')
         DB_PASSWORD = credentials('db-password')
+        MAIL_USERNAME = credentials('mail-username')
         MAIL_PASSWORD = credentials('mail-password')
     }
 
@@ -45,6 +46,7 @@ pipeline {
                 -e DB_URL=${DB_URL} \
                 -e DB_USERNAME=${DB_USERNAME} \
                 -e DB_PASSWORD=${DB_PASSWORD} \
+                -e MAIL_USERNAME=${MAIL_USERNAME} \
                 -e MAIL_PASSWORD=${MAIL_PASSWORD} \
                 --name backend ${BACKEND_IMAGE}:${env.BUILD_NUMBER}
                 """
@@ -61,5 +63,6 @@ pipeline {
         }
     }
 }
+
 
 
