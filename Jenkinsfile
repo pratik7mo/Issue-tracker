@@ -4,14 +4,10 @@ pipeline {
     environment {
         BACKEND_IMAGE = "issue-tracker-backend"
         FRONTEND_IMAGE = "issue-tracker-frontend"
-        DB_URL = credentials('db-url')
-        DB_USERNAME = credentials('db-username')
-        DB_PASSWORD = credentials('db-password')
-        MAIL_USERNAME = credentials('mail-username')
-        MAIL_PASSWORD = credentials('mail-password')
-        VITE_API_BASE_URL = credentials('vite-api-url')
         REDIS_HOST = "redis"
         REDIS_PORT = "6379"
+        // Prevent JVM OutOfMemory errors by limiting Maven memory
+        MAVEN_OPTS = "-Xms256m -Xmx512m"
     }
 
     stages {
@@ -46,11 +42,12 @@ pipeline {
 
         stage('Frontend: Build & Lint') {
             steps {
-                dir('issue-tracker-frontend') {
-                    bat 'npm install'
-                    bat 'npm run lint'
-                    // In Windows bat, VITE_API_BASE_URL must be set before run
-                    bat "set VITE_API_BASE_URL=%VITE_API_BASE_URL% && npm run build"
+                withCredentials([string(credentialsId: 'vite-api-url', variable: 'VITE_URL')]) {
+                    dir('issue-tracker-frontend') {
+                        bat 'npm install'
+                        bat 'npm run lint'
+                        bat "set VITE_API_BASE_URL=%VITE_URL% && npm run build"
+                    }
                 }
             }
         }
@@ -65,20 +62,28 @@ pipeline {
 
         stage('Create Env File') {
             steps {
-                // Return .env to the root (same folder as docker-compose.yml)
-                writeFile file: '.env', text: """
+                withCredentials([
+                    string(credentialsId: 'db-url', variable: 'DB_URL'),
+                    string(credentialsId: 'db-username', variable: 'DB_USER'),
+                    string(credentialsId: 'db-password', variable: 'DB_PASS'),
+                    string(credentialsId: 'mail-username', variable: 'MAIL_USER'),
+                    string(credentialsId: 'mail-password', variable: 'MAIL_PASS'),
+                    string(credentialsId: 'vite-api-url', variable: 'VITE_API')
+                ]) {
+                    writeFile file: '.env', text: """
 DB_URL=${DB_URL}
-DB_USERNAME=${DB_USERNAME}
-DB_PASSWORD=${DB_PASSWORD}
-MAIL_USERNAME=${MAIL_USERNAME}
-MAIL_PASSWORD=${MAIL_PASSWORD}
-VITE_API_BASE_URL=${VITE_API_BASE_URL}
+DB_USERNAME=${DB_USER}
+DB_PASSWORD=${DB_PASS}
+MAIL_USERNAME=${MAIL_USER}
+MAIL_PASSWORD=${MAIL_PASS}
+VITE_API_BASE_URL=${VITE_API}
 REDIS_HOST=${REDIS_HOST}
 REDIS_PORT=${REDIS_PORT}
 """
-                // Verify the file was created in the root
-                bat 'dir .env'
-                bat 'type .env'
+                    // Verify the file was created in the root
+                    bat 'dir .env'
+                    bat 'type .env'
+                }
             }
         }
 
@@ -100,8 +105,8 @@ REDIS_PORT=${REDIS_PORT}
 
     post {
         always {
-            // Delete the temporary .env file for security
-            bat 'if exist .env del .env'
+            // TEMPORARY: Commented out for debugging so you can manually check the .env file
+            // bat 'if exist .env del .env'
         }
         success {
             echo 'Pipeline completed successfully and stack deployed!'
