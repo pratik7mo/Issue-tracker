@@ -70,22 +70,27 @@ pipeline {
                     string(credentialsId: 'mail-password', variable: 'MAIL_PASS'),
                     string(credentialsId: 'vite-api-url', variable: 'VITE_API')
                 ]) {
-                    writeFile file: '.env', text: """
+                    script {
+                        def envContent = """
 DB_URL=${DB_URL}
 DB_USERNAME=${DB_USER}
 DB_PASSWORD=${DB_PASS}
 MAIL_USERNAME=${MAIL_USER}
 MAIL_PASSWORD=${MAIL_PASS}
 VITE_API_BASE_URL=${VITE_API}
-REDIS_HOST=${REDIS_HOST}
-REDIS_PORT=${REDIS_PORT}
+REDIS_HOST=${env.REDIS_HOST}
+REDIS_PORT=${env.REDIS_PORT}
+
 """
+                        writeFile file: '.env', text: envContent
+                    }
                     // Verify the file was created in the root
                     bat 'dir .env'
                     bat 'type .env'
                 }
             }
         }
+
 
         stage('Deploy Stack') {
             steps {
