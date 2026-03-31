@@ -4,8 +4,11 @@ pipeline {
     environment {
         BACKEND_IMAGE = "issue-tracker-backend"
         FRONTEND_IMAGE = "issue-tracker-frontend"
-        // Replace with your Docker Registry if applicable
-        // DOCKER_REGISTRY = "my-docker-registry"
+        DB_URL = credentials('db-url')
+        DB_USERNAME = credentials('db-username')
+        DB_PASSWORD = credentials('db-password')
+        MAIL_USERNAME = credentials('mail-username')
+        MAIL_PASSWORD = credentials('mail-password')
     }
 
     stages {
@@ -55,6 +58,20 @@ pipeline {
             }
         }
 
+        stage('Deploy Stack') {
+            steps {
+                sh """
+                docker-compose down || true
+                DB_URL=${DB_URL} \
+                DB_USERNAME=${DB_USERNAME} \
+                DB_PASSWORD=${DB_PASSWORD} \
+                MAIL_USERNAME=${MAIL_USERNAME} \
+                MAIL_PASSWORD=${MAIL_PASSWORD} \
+                docker-compose up -d
+                """
+            }
+        }
+
         stage('Clean Workspace') {
             steps {
                 cleanWs()
@@ -64,10 +81,11 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Pipeline completed successfully and stack deployed!'
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
+
