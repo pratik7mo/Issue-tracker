@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         BACKEND_IMAGE = "issue-tracker-backend"
+        DB_PASSWORD = credentials('db-password')
+        MAIL_PASSWORD = credentials('mail-password')
     }
 
     stages {
@@ -29,14 +31,29 @@ pipeline {
                 sh "docker build -t ${BACKEND_IMAGE}:${env.BUILD_NUMBER} ."
             }
         }
+
+        stage('Run Container') {
+            steps {
+                sh '''
+                docker stop backend || true
+                docker rm backend || true
+
+                docker run -d -p 8080:8080 \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e MAIL_PASSWORD=$MAIL_PASSWORD \
+                --name backend ${BACKEND_IMAGE}:${BUILD_NUMBER}
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'Backend build successful!'
+            echo 'Backend build and deployment successful!'
         }
         failure {
-            echo 'Backend build failed.'
+            echo 'Backend build or deployment failed.'
         }
     }
 }
+
