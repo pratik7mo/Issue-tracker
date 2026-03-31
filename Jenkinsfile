@@ -81,11 +81,12 @@ REDIS_PORT=${REDIS_PORT}
         stage('Deploy Stack') {
             steps {
                 bat """
-                docker-compose down --remove-orphans || true
-                docker-compose up -d --build
+                docker-compose --env-file .env down --remove-orphans || true
+                docker-compose --env-file .env up -d --build
                 """
             }
         }
+
 
         stage('Clean Workspace') {
             steps {
