@@ -71,6 +71,19 @@ pipeline {
                     string(credentialsId: 'vite-api-url', variable: 'VITE_API')
                 ]) {
                     script {
+                        def requiredSecrets = [
+                            DB_URL      : DB_URL,
+                            DB_USERNAME : DB_USER,
+                            DB_PASSWORD : DB_PASS,
+                            MAIL_USERNAME: MAIL_USER,
+                            MAIL_PASSWORD: MAIL_PASS,
+                            VITE_API_BASE_URL: VITE_API
+                        ]
+                        def missingSecrets = requiredSecrets.findAll { key, value -> !value?.trim() }.keySet()
+                        if (!missingSecrets.isEmpty()) {
+                            error "Missing required Jenkins credentials values: ${missingSecrets.join(', ')}"
+                        }
+
                         def envContent = """
 DB_URL=${DB_URL}
 DB_USERNAME=${DB_USER}
@@ -86,7 +99,6 @@ REDIS_PORT=${env.REDIS_PORT}
                     }
                     // Verify the file was created in the root
                     bat 'dir .env'
-                    bat 'type .env'
                 }
             }
         }
@@ -94,10 +106,16 @@ REDIS_PORT=${env.REDIS_PORT}
 
         stage('Deploy Stack') {
             steps {
-                bat """
-                docker-compose --env-file .env down --remove-orphans || true
-                docker-compose --env-file .env up -d --build
-                """
+                script {
+                    def envVars = readProperties file: '.env'
+                    def requiredComposeVars = ['DB_URL', 'DB_USERNAME', 'DB_PASSWORD', 'MAIL_USERNAME', 'MAIL_PASSWORD']
+                    def missingComposeVars = requiredComposeVars.findAll { key -> !envVars[key]?.trim() }
+                    if (!missingComposeVars.isEmpty()) {
+                        error "Deployment aborted: required .env values are missing or blank: ${missingComposeVars.join(', ')}"
+                    }
+                }
+                bat 'docker-compose --env-file .env down --remove-orphans'
+                bat 'docker-compose --env-file .env up -d --build'
             }
         }
 
