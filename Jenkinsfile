@@ -60,6 +60,35 @@ pipeline {
             }
         }
 
+        stage('Verify Required Credentials') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'db-url', variable: 'DB_URL_CHECK'),
+                    string(credentialsId: 'db-username', variable: 'DB_USER_CHECK'),
+                    string(credentialsId: 'db-password', variable: 'DB_PASS_CHECK'),
+                    string(credentialsId: 'mail-username', variable: 'MAIL_USER_CHECK'),
+                    string(credentialsId: 'mail-password', variable: 'MAIL_PASS_CHECK'),
+                    string(credentialsId: 'vite-api-url', variable: 'VITE_API_CHECK')
+                ]) {
+                    script {
+                        def required = [
+                            'db-url'       : DB_URL_CHECK,
+                            'db-username'  : DB_USER_CHECK,
+                            'db-password'  : DB_PASS_CHECK,
+                            'mail-username': MAIL_USER_CHECK,
+                            'mail-password': MAIL_PASS_CHECK,
+                            'vite-api-url' : VITE_API_CHECK
+                        ]
+                        def missing = required.findAll { id, value -> !value?.trim() }.keySet()
+                        if (!missing.isEmpty()) {
+                            error "Missing/blank Jenkins credential values for IDs: ${missing.join(', ')}"
+                        }
+                        echo "All required Jenkins credentials are present."
+                    }
+                }
+            }
+        }
+
         stage('Create Env File') {
             steps {
                 withCredentials([
