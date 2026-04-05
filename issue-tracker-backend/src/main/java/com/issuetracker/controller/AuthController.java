@@ -8,7 +8,7 @@ import com.issuetracker.dto.RegisterResponseDto;
 import com.issuetracker.dto.ResetPasswordRequest;
 import com.issuetracker.dto.ApiResponse;
 import com.issuetracker.entity.User;
-import com.issuetracker.repo.UserRepository;
+import com.issuetracker.repo.jpa.UserRepository;
 import com.issuetracker.security.CustomUserDetailsService;
 import com.issuetracker.security.JwtUtil;
 import com.issuetracker.service.EmailService;

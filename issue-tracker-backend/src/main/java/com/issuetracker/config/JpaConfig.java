@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
+@org.springframework.data.jpa.repository.config.EnableJpaRepositories(basePackages = "com.issuetracker.repo.jpa")
 public class JpaConfig {
 
     @Bean

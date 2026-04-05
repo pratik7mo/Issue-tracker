@@ -1,7 +1,7 @@
 package com.issuetracker.security;
 
 import com.issuetracker.entity.User;
-import com.issuetracker.repo.UserRepository;
+import com.issuetracker.repo.jpa.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

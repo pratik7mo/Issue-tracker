@@ -2,8 +2,8 @@ package com.issuetracker.service.impl;
 
 import com.issuetracker.dto.UserResponse;
 import com.issuetracker.entity.User;
-import com.issuetracker.repo.UserRepository;
-import com.issuetracker.repo.PasswordResetTokenRepository;
+import com.issuetracker.repo.jpa.UserRepository;
+import com.issuetracker.repo.jpa.PasswordResetTokenRepository;
 import com.issuetracker.entity.PasswordResetToken;
 import com.issuetracker.mapper.UserMapper;
 import com.issuetracker.service.UserService;

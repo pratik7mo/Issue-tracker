@@ -23,7 +23,11 @@ const Login: React.FC = () => {
       login(token, { id: 0, name: name || 'User', email, role: role || 'DEVELOPER' });
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      if (!err.response) {
+        setError('Network error: Unable to connect to the backend server. Please check if the services are running.');
+      } else {
+        setError(err.response.data?.message || 'Invalid email or password');
+      }
     } finally {
       setLoading(false);
     }
