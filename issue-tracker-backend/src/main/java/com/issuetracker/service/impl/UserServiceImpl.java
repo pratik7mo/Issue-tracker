@@ -46,6 +46,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserResponse updateUser(Long id, com.issuetracker.dto.UserUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+        userMapper.updateFromDto(request, user);
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found: " + id);
+        }
+        userRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
     public void createPasswordResetTokenForUser(User user, String token) {
         PasswordResetToken myToken = tokenRepository.findByUser(user)
                 .map(t -> {

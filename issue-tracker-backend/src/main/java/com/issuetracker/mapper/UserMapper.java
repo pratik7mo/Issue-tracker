@@ -17,4 +17,13 @@ public class UserMapper {
                 .role(user.getRole())
                 .build();
     }
+
+    public void updateFromDto(com.issuetracker.dto.UserUpdateRequest request, User user) {
+        if (request == null || user == null)
+            return;
+        if (request.getName() != null)
+            user.setName(request.getName());
+        if (request.getRole() != null)
+            user.setRole(request.getRole());
+    }
 }

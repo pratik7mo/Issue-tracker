@@ -11,6 +11,10 @@ public interface UserService {
 
     java.util.List<UserResponse> getAllUsers();
 
+    UserResponse updateUser(Long id, com.issuetracker.dto.UserUpdateRequest request);
+
+    void deleteUser(Long id);
+
     void createPasswordResetTokenForUser(User user, String token);
 
     String validatePasswordResetToken(String token);
