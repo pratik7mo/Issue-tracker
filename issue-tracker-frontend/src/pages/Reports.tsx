@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import api from '../api/axios';
-import { LayoutDashboard, Download, Filter } from 'lucide-react';
+import { LayoutDashboard, Download, Filter, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Stats {
   totalIssues: number;
@@ -18,6 +21,23 @@ interface Stats {
   typeDistribution: Record<string, number>;
   statusDistribution: Record<string, number>;
   priorityDistribution: Record<string, number>;
+  recentActivity: Array<{
+    id: number;
+    userEmail: string;
+    action: string;
+    entityType: string;
+    entityId: string;
+    details: string;
+    createdAt: string;
+  }>;
+  recentlyCreatedIssues: Array<{
+    id: number;
+    issueId: string;
+    title: string;
+    status: string;
+    priority: string;
+    createdAt: string;
+  }>;
 }
 
 const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -25,6 +45,8 @@ const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
 const Reports: React.FC = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -52,8 +74,35 @@ const Reports: React.FC = () => {
   const priorityData = Object.entries(stats.priorityDistribution).map(([name, value]) => ({ name, value }));
   const typeData = Object.entries(stats.typeDistribution).map(([name, value]) => ({ name: name.replace('_', ' '), value }));
 
+  const handleExport = async () => {
+    if (!reportRef.current) return;
+    setIsExporting(true);
+    
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#0f172a'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`issue-tracker-report-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 max-h-[calc(100vh-100px)] overflow-y-auto pr-2">
+    <div ref={reportRef} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 p-2">
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-slate-100 uppercase tracking-tight italic">Analytics</h2>
@@ -64,9 +113,13 @@ const Reports: React.FC = () => {
                 <Filter className="w-3.5 h-3.5 mr-1.5" />
                 Filter
             </button>
-            <button className="btn-primary px-3 py-1.5 flex items-center text-xs font-bold">
+            <button 
+              onClick={handleExport}
+              disabled={isExporting}
+              className="btn-primary px-3 py-1.5 flex items-center text-xs font-bold disabled:opacity-50"
+            >
                 <Download className="w-3.5 h-3.5 mr-1.5" />
-                Export
+                {isExporting ? 'Exporting...' : 'Export'}
             </button>
         </div>
       </header>
@@ -168,6 +221,85 @@ const Reports: React.FC = () => {
                 <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Recent Activity Section */}
+        <div className="glass p-5 rounded-2xl border border-white/5 bg-slate-900/40">
+           <h3 className="text-xs font-black text-slate-400 mb-4 flex items-center uppercase tracking-widest">
+             <div className="w-1.5 h-4 bg-primary rounded-full mr-2" />
+             Recent System Activity
+          </h3>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
+            {stats.recentActivity && stats.recentActivity.length > 0 ? (
+              stats.recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                  <div className="mt-1 p-1.5 rounded-lg bg-primary/20 text-primary">
+                    <Clock className="w-3 h-3" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-300">
+                      <span className="font-bold text-slate-100">{activity.userEmail}</span> {activity.action} {activity.entityType}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1 flex items-center">
+                      {activity.details} • {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-500 italic p-4 text-center">No recent activity recorded.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Recently Created Issues Section */}
+        <div className="glass p-5 rounded-2xl border border-white/5 bg-slate-900/40">
+          <h3 className="text-xs font-black text-slate-400 mb-4 flex items-center uppercase tracking-widest">
+             <div className="w-1.5 h-4 bg-emerald-500 rounded-full mr-2" />
+             Latest Issues
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-white/5 text-slate-500 font-bold uppercase tracking-tighter">
+                  <th className="pb-2">ID</th>
+                  <th className="pb-2">Title</th>
+                  <th className="pb-2">Status</th>
+                  <th className="pb-2">Priority</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {stats.recentlyCreatedIssues && stats.recentlyCreatedIssues.length > 0 ? (
+                  stats.recentlyCreatedIssues.map((issue) => (
+                    <tr key={issue.id} className="group hover:bg-white/5 transition-colors">
+                      <td className="py-3 font-mono text-primary font-bold">{issue.issueId}</td>
+                      <td className="py-3 text-slate-100 font-medium truncate max-w-[150px]">{issue.title}</td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 uppercase">
+                          {issue.status}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/10 uppercase ${
+                          issue.priority === 'CRITICAL' ? 'text-red-400 bg-red-400/10' :
+                          issue.priority === 'HIGH' ? 'text-orange-400 bg-orange-400/10' :
+                          'text-slate-400 bg-slate-400/10'
+                        }`}>
+                          {issue.priority}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-slate-500 italic">No recent issues found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
