@@ -53,59 +53,59 @@ const Reports: React.FC = () => {
   const typeData = Object.entries(stats.typeDistribution).map(([name, value]) => ({ name: name.replace('_', ' '), value }));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 max-h-[calc(100vh-100px)] overflow-y-auto pr-2">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-slate-100 uppercase tracking-tighter italic">Analytics Reports</h2>
-          <p className="text-slate-400 mt-1">Comprehensive overview of system performance and issue tracking.</p>
+          <h2 className="text-xl font-black text-slate-100 uppercase tracking-tight italic">Analytics</h2>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">System Performance Overview</p>
         </div>
-        <div className="flex gap-3">
-            <button className="glass px-4 py-2 rounded-xl text-slate-400 flex items-center hover:text-white transition-colors">
-                <Filter className="w-4 h-4 mr-2" />
+        <div className="flex gap-2">
+            <button className="glass px-3 py-1.5 rounded-lg text-slate-400 flex items-center hover:text-white transition-colors text-xs font-bold">
+                <Filter className="w-3.5 h-3.5 mr-1.5" />
                 Filter
             </button>
-            <button className="btn-primary px-4 py-2 flex items-center">
-                <Download className="w-4 h-4 mr-2" />
-                Export PDF
+            <button className="btn-primary px-3 py-1.5 flex items-center text-xs font-bold">
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Export
             </button>
         </div>
       </header>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total Issues', value: stats.totalIssues, color: 'from-blue-500/20 to-indigo-500/20' },
+          { label: 'Total', value: stats.totalIssues, color: 'from-blue-500/20 to-indigo-500/20' },
           { label: 'Unassigned', value: stats.unassignedIssues, color: 'from-orange-500/20 to-red-500/20' },
-          { label: 'Critical/High', value: stats.criticalIssues + stats.highPriorityIssues, color: 'from-red-500/20 to-pink-500/20' },
+          { label: 'Priority', value: stats.criticalIssues + stats.highPriorityIssues, color: 'from-red-500/20 to-pink-500/20' },
           { label: 'Resolved', value: stats.resolvedIssues, color: 'from-emerald-500/20 to-teal-500/20' },
         ].map((card, i) => (
-          <div key={i} className={`glass p-6 rounded-3xl border border-white/5 bg-gradient-to-br ${card.color} relative overflow-hidden group hover:scale-[1.02] transition-all`}>
-             <div className="relative z-10">
-                <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">{card.label}</p>
-                <h3 className="text-4xl font-black text-slate-100 tabular-nums">{card.value}</h3>
+          <div key={i} className={`glass p-3 rounded-2xl border border-white/5 bg-gradient-to-br ${card.color} relative overflow-hidden group hover:translate-y-[-2px] transition-all`}>
+             <div className="relative z-10 flex flex-col">
+                <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-0.5">{card.label}</p>
+                <h3 className="text-xl font-black text-slate-100 tabular-nums">{card.value}</h3>
              </div>
-             <LayoutDashboard className="absolute -right-4 -bottom-4 w-24 h-24 text-white/5 group-hover:text-white/10 transition-colors rotate-12" />
+             <LayoutDashboard className="absolute -right-2 -bottom-2 w-12 h-12 text-white/5 group-hover:text-white/10 transition-colors rotate-12" />
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Status Distribution */}
-        <div className="glass p-8 rounded-[2rem] border border-white/5">
-          <h3 className="text-xl font-bold text-slate-200 mb-8 flex items-center">
-             <div className="w-2 h-6 bg-primary rounded-full mr-3" />
-             Status Distribution
+        <div className="glass p-4 rounded-2xl border border-white/5">
+          <h3 className="text-xs font-black text-slate-400 mb-4 flex items-center uppercase tracking-widest">
+             <div className="w-1.5 h-4 bg-primary rounded-full mr-2" />
+             Status
           </h3>
-          <div className="h-[300px] w-full">
+          <div className="h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={statusData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
+                  innerRadius={45}
+                  outerRadius={65}
+                  paddingAngle={4}
                   dataKey="value"
                 >
                   {statusData.map((_, index) => (
@@ -113,59 +113,59 @@ const Reports: React.FC = () => {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '10px' }}
+                  itemStyle={{ color: '#fff', padding: '2px 0' }}
                 />
-                <Legend />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Priority Level */}
-        <div className="glass p-8 rounded-[2rem] border border-white/5">
-          <h3 className="text-xl font-bold text-slate-200 mb-8 flex items-center">
-             <div className="w-2 h-6 bg-orange-500 rounded-full mr-3" />
-             Priority Breakdown
+        <div className="glass p-4 rounded-2xl border border-white/5">
+          <h3 className="text-xs font-black text-slate-400 mb-4 flex items-center uppercase tracking-widest">
+             <div className="w-1.5 h-4 bg-orange-500 rounded-full mr-2" />
+             Priority
           </h3>
-          <div className="h-[300px] w-full">
+          <div className="h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={priorityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+              <BarChart data={priorityData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} fontWeight="bold" />
+                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} fontWeight="bold" />
                 <Tooltip 
                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                   contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                   contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '10px' }}
                 />
-                <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 0, 0]} barSize={40} />
+                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
          {/* Issue Types */}
-         <div className="glass p-8 rounded-[2rem] border border-white/5 lg:col-span-2">
-          <h3 className="text-xl font-bold text-slate-200 mb-8 flex items-center">
-             <div className="w-2 h-6 bg-emerald-500 rounded-full mr-3" />
-             Issue Type Trends
+         <div className="glass p-4 rounded-2xl border border-white/5">
+          <h3 className="text-xs font-black text-slate-400 mb-4 flex items-center uppercase tracking-widest">
+             <div className="w-1.5 h-4 bg-emerald-500 rounded-full mr-2" />
+             Trends
           </h3>
-          <div className="h-[300px] w-full">
+          <div className="h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={typeData}>
+              <AreaChart data={typeData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                     </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" fontSize={9} fontWeight="bold" />
+                <YAxis stroke="#64748b" fontSize={9} fontWeight="bold" />
                 <Tooltip 
-                   contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                   contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '10px' }}
                 />
-                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
