@@ -6,7 +6,7 @@ import {
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import api from '../api/axios';
-import { LayoutDashboard, Download, Filter, Clock } from 'lucide-react';
+import { LayoutDashboard, Download, Filter, Clock, CheckCircle, AlertTriangle, Circle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Stats {
@@ -22,17 +22,13 @@ interface Stats {
   statusDistribution: Record<string, number>;
   priorityDistribution: Record<string, number>;
   recentActivity: Array<{
-    id: number;
-    userEmail: string;
+    icon: string;
+    issueId: number;
     action: string;
-    entityType: string;
-    entityId: string;
-    details: string;
-    createdAt: string;
+    time: string;
   }>;
   recentlyCreatedIssues: Array<{
     id: number;
-    issueId: string;
     title: string;
     status: string;
     priority: string;
@@ -234,17 +230,20 @@ const Reports: React.FC = () => {
           </h3>
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
             {stats.recentActivity && stats.recentActivity.length > 0 ? (
-              stats.recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+              stats.recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                   <div className="mt-1 p-1.5 rounded-lg bg-primary/20 text-primary">
-                    <Clock className="w-3 h-3" />
+                    {activity.icon === 'check-circle' ? <CheckCircle className="w-3 h-3" /> :
+                     activity.icon === 'alert-triangle' ? <AlertTriangle className="w-3 h-3" /> :
+                     activity.icon === 'circle' ? <Circle className="w-3 h-3" /> :
+                     <Clock className="w-3 h-3" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-slate-300">
-                      <span className="font-bold text-slate-100">{activity.userEmail}</span> {activity.action} {activity.entityType}
+                      <span className="font-bold text-slate-100 italic">Issue #{activity.issueId}</span> {activity.action}
                     </p>
                     <p className="text-[10px] text-slate-500 mt-1 flex items-center">
-                      {activity.details} • {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(activity.time), { addSuffix: true })}
                     </p>
                   </div>
                 </div>
@@ -265,7 +264,6 @@ const Reports: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-white/5 text-slate-500 font-bold uppercase tracking-tighter">
-                  <th className="pb-2">ID</th>
                   <th className="pb-2">Title</th>
                   <th className="pb-2">Status</th>
                   <th className="pb-2">Priority</th>
@@ -275,7 +273,6 @@ const Reports: React.FC = () => {
                 {stats.recentlyCreatedIssues && stats.recentlyCreatedIssues.length > 0 ? (
                   stats.recentlyCreatedIssues.map((issue) => (
                     <tr key={issue.id} className="group hover:bg-white/5 transition-colors">
-                      <td className="py-3 font-mono text-primary font-bold">{issue.issueId}</td>
                       <td className="py-3 text-slate-100 font-medium truncate max-w-[150px]">{issue.title}</td>
                       <td className="py-3">
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 uppercase">
@@ -295,7 +292,7 @@ const Reports: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-slate-500 italic">No recent issues found.</td>
+                    <td colSpan={3} className="py-8 text-center text-slate-500 italic">No recent issues found.</td>
                   </tr>
                 )}
               </tbody>

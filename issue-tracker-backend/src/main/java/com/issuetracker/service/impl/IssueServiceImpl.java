@@ -131,12 +131,17 @@ public class IssueServiceImpl implements IssueService {
         List<com.issuetracker.dto.ActivityDto> recentActivity = allIssues.stream()
                 .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
                 .limit(5)
-                .map(i -> com.issuetracker.dto.ActivityDto.builder()
+                .map(i -> {
+                    String action = "was updated to " + i.getStatus();
+                    String icon = i.getStatus() == com.issuetracker.enums.Status.RESOLVED ? "check-circle" : 
+                                 i.getPriority() == com.issuetracker.enums.Priority.CRITICAL ? "alert-triangle" : "circle";
+                    return com.issuetracker.dto.ActivityDto.builder()
                         .issueId(i.getId())
-                        .action("Updated State") // Simulating activity for now
+                        .action(action)
                         .time(i.getUpdatedAt())
-                        .icon("alert-circle")
-                        .build())
+                        .icon(icon)
+                        .build();
+                })
                 .collect(Collectors.toList());
 
         List<com.issuetracker.dto.IssueResponseDto> recentIssues = issueRepository.findTop5ByOrderByCreatedAtDesc()

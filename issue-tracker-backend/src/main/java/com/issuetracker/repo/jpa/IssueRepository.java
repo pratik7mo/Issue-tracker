@@ -30,7 +30,7 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
             + "AND i.status != com.issuetracker.enums.Status.CLOSED "
             + "AND i.updatedAt < :overdueLimit")
     List<Issue> findOverdueIssues(
-            @org.springframework.web.bind.annotation.PathVariable("overdueLimit") LocalDateTime overdueLimit);
+            @org.springframework.data.repository.query.Param("overdueLimit") LocalDateTime overdueLimit);
 
     List<Issue> findByAssignedToUserAndStatus(User user, Status status);
 

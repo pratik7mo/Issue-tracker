@@ -8,6 +8,12 @@ pipeline {
         REDIS_PORT = "6379"
         // Prevent JVM OutOfMemory errors by limiting Maven memory
         MAVEN_OPTS = "-Xms256m -Xmx512m"
+
+        // AWS CONFIGURATION (Set these in Jenkins Global Environment Variables)
+        AWS_ACCOUNT_ID = "${env.AWS_ACCOUNT_ID}"
+        AWS_REGION = "${env.AWS_REGION}"
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        EC2_PUBLIC_IP = "${env.EC2_PUBLIC_IP}"
     }
 
     stages {
@@ -133,7 +139,10 @@ REDIS_PORT=${env.REDIS_PORT}
         }
 
 
-        stage('Deploy Stack') {
+        stage('Deploy Stack (Local)') {
+            when {
+                expression { env.DEPLOY_LOCAL == 'true' }
+            }
             steps {
                 script {
                     def envVars = readProperties file: '.env'
@@ -145,6 +154,57 @@ REDIS_PORT=${env.REDIS_PORT}
                 }
                 bat 'docker-compose --env-file .env down --remove-orphans'
                 bat 'docker-compose --env-file .env up -d --build'
+            }
+        }
+
+        stage('AWS: Push to ECR') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    // Log in to ECR (Windows bat)
+                    bat "aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REGISTRY%"
+                    
+                    // Tag and Push Backend
+                    bat "docker tag %BACKEND_IMAGE%:latest %ECR_REGISTRY%/%BACKEND_IMAGE%:latest"
+                    bat "docker tag %BACKEND_IMAGE%:latest %ECR_REGISTRY%/%BACKEND_IMAGE%:%BUILD_NUMBER%"
+                    bat "docker push %ECR_REGISTRY%/%BACKEND_IMAGE%:latest"
+                    bat "docker push %ECR_REGISTRY%/%BACKEND_IMAGE%:%BUILD_NUMBER%"
+                    
+                    // Tag and Push Frontend
+                    bat "docker tag %FRONTEND_IMAGE%:latest %ECR_REGISTRY%/%FRONTEND_IMAGE%:latest"
+                    bat "docker tag %FRONTEND_IMAGE%:latest %ECR_REGISTRY%/%FRONTEND_IMAGE%:%BUILD_NUMBER%"
+                    bat "docker push %ECR_REGISTRY%/%FRONTEND_IMAGE%:latest"
+                    bat "docker push %ECR_REGISTRY%/%FRONTEND_IMAGE%:%BUILD_NUMBER%"
+                }
+            }
+        }
+
+        stage('AWS: Deploy to EC2') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    // 1. Copy the .env file to EC2
+                    sh "scp -o StrictHostKeyChecking=no .env ec2-user@${EC2_PUBLIC_IP}:~/issue-tracker/.env"
+                    
+                    // 2. Run remote commands
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} '
+                            mkdir -p ~/issue-tracker
+                            cd ~/issue-tracker
+                            
+                            # Log in to ECR on remote
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            
+                            # Set ECR_REGISTRY for docker-compose and pull
+                            export ECR_REGISTRY=${ECR_REGISTRY}
+                            docker-compose -f docker-compose.prod.yml --env-file .env pull
+                            
+                            # Restart stack
+                            docker-compose -f docker-compose.prod.yml --env-file .env up -d
+                        '
+                    """
+                }
             }
         }
 
