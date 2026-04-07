@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         BACKEND_IMAGE = "issue-tracker-backend"
-        FRONTEND_IMAGE = "issue-tracker-frontend"
+        FRONTEND_IMAGE = "issue-tacker-frontend"
         REDIS_HOST = "redis"
         REDIS_PORT = "6379"
         // Prevent JVM OutOfMemory errors by limiting Maven memory
