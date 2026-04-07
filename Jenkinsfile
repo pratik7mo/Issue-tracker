@@ -185,11 +185,11 @@ REDIS_PORT=${env.REDIS_PORT}
             steps {
                 sshagent(['ec2-ssh-key']) {
                     // 1. Copy the .env file to EC2
-                    sh "scp -o StrictHostKeyChecking=no .env ec2-user@${EC2_PUBLIC_IP}:~/issue-tracker/.env"
+                    sh "scp -o StrictHostKeyChecking=no .env ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/.env"
                     
                     // 2. Run remote commands
                     sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} '
+                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} '
                             mkdir -p ~/issue-tracker
                             cd ~/issue-tracker
                             
