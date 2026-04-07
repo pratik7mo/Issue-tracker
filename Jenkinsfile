@@ -184,26 +184,28 @@ REDIS_PORT=${env.REDIS_PORT}
         stage('AWS: Deploy to EC2') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    // 1. Copy the .env file to EC2
-                    sh "scp -o StrictHostKeyChecking=no .env ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/.env"
-                    
-                    // 2. Run remote commands
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} '
-                            mkdir -p ~/issue-tracker
-                            cd ~/issue-tracker
-                            
-                            # Log in to ECR on remote
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            
-                            # Set ECR_REGISTRY for docker-compose and pull
-                            export ECR_REGISTRY=${ECR_REGISTRY}
-                            docker-compose -f docker-compose.prod.yml --env-file .env pull
-                            
-                            # Restart stack
-                            docker-compose -f docker-compose.prod.yml --env-file .env up -d
-                        '
-                    """
+                    script {
+                        // Use sh (if bash is on PATH) or bat for Windows
+                        // Jenkins on Windows with sshagent usually provides a shell-like env
+                        sh "scp -o StrictHostKeyChecking=no .env ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/.env"
+                        
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} '
+                                mkdir -p ~/issue-tracker
+                                cd ~/issue-tracker
+                                
+                                # Log in to ECR on remote
+                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                                
+                                # Set ECR_REGISTRY for docker-compose and pull
+                                export ECR_REGISTRY=${ECR_REGISTRY}
+                                docker-compose -f docker-compose.prod.yml --env-file .env pull
+                                
+                                # Restart stack
+                                docker-compose -f docker-compose.prod.yml --env-file .env up -d
+                            '
+                        """
+                    }
                 }
             }
         }
