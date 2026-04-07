@@ -185,10 +185,10 @@ REDIS_PORT=${env.REDIS_PORT}
             steps {
                 sshagent(['ec2-ssh-key']) {
                     script {
-                        // Use sh (if bash is on PATH) or bat for Windows
-                        // Jenkins on Windows with sshagent usually provides a shell-like env
-                        sh "scp -o StrictHostKeyChecking=no .env ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/.env"
+                        // 1. Copy both .env and docker-compose.prod.yml to the EC2
+                        sh "scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/"
                         
+                        // 2. Run remote commands to restart the app
                         sh """
                             ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} '
                                 mkdir -p ~/issue-tracker
@@ -202,6 +202,7 @@ REDIS_PORT=${env.REDIS_PORT}
                                 docker-compose -f docker-compose.prod.yml --env-file .env pull
                                 
                                 # Restart stack
+                                docker-compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
                                 docker-compose -f docker-compose.prod.yml --env-file .env up -d
                             '
                         """
