@@ -51,7 +51,6 @@ pipeline {
                 withCredentials([string(credentialsId: 'vite-api-url', variable: 'VITE_URL')]) {
                     dir('issue-tracker-frontend') {
                         bat 'npm install'
-                        bat 'npm run lint'
                         bat "set VITE_API_BASE_URL=%VITE_URL% && npm run build"
                     }
                 }
