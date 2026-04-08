@@ -196,10 +196,16 @@ REDIS_PORT=${env.REDIS_PORT}
         stage('AWS: Deploy to EC2') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'KEY')]) {
-                    // 1. Copy both .env and docker-compose.prod.yml to the EC2 using the provided key
+                    // 1. Fix permissions on the temporary key file (Required for Windows SSH)
+                    bat '''
+                        icacls %KEY% /inheritance:r
+                        icacls %KEY% /grant:r "%USERNAME%:F"
+                    '''
+                    
+                    // 2. Copy both .env and docker-compose.prod.yml to the EC2 using the protected key
                     bat 'scp -o StrictHostKeyChecking=no -i %KEY% .env docker-compose.prod.yml ubuntu@%EC2_PUBLIC_IP%:~/issue-tracker/'
                     
-                    // 2. Run remote commands to restart the app stack
+                    // 3. Run remote commands to restart the app stack
                     bat '''
                         ssh -o StrictHostKeyChecking=no -i %KEY% ubuntu@%EC2_PUBLIC_IP% "
                             mkdir -p ~/issue-tracker
