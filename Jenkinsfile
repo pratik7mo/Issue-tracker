@@ -233,6 +233,7 @@ REDIS_PORT=${env.REDIS_PORT}
 
     post {
         always {
+            echo 'Finalizing pipeline execution...'
             // TEMPORARY: Commented out for debugging so you can manually check the .env file
             // bat 'if exist .env del .env'
         }
