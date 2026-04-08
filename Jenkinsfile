@@ -157,6 +157,17 @@ REDIS_PORT=${env.REDIS_PORT}
             }
         }
 
+        stage('AWS: Test Authentication') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    bat "aws sts get-caller-identity"
+                }
+            }
+        }
+
         stage('AWS: Push to ECR') {
             steps {
                 withCredentials([
