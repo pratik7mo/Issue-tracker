@@ -199,7 +199,7 @@ REDIS_PORT=${env.REDIS_PORT}
                     // 1. Fix permissions on the temporary key file (Required for Windows SSH)
                     bat '''
                         icacls %KEY% /inheritance:r
-                        icacls %KEY% /grant:r "%USERNAME%:F"
+                        icacls %KEY% /grant:r "Administrators:F"
                     '''
                     
                     // 2. Copy both .env and docker-compose.prod.yml to the EC2 using the protected key
