@@ -195,13 +195,13 @@ REDIS_PORT=${env.REDIS_PORT}
 
         stage('AWS: Deploy to EC2') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    // 1. Copy both .env and docker-compose.prod.yml to the EC2
-                    bat 'scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@%EC2_PUBLIC_IP%:~/issue-tracker/'
+                withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'KEY')]) {
+                    // 1. Copy both .env and docker-compose.prod.yml to the EC2 using the provided key
+                    bat 'scp -o StrictHostKeyChecking=no -i %KEY% .env docker-compose.prod.yml ubuntu@%EC2_PUBLIC_IP%:~/issue-tracker/'
                     
-                    // 2. Run remote commands to restart the app
+                    // 2. Run remote commands to restart the app stack
                     bat '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@%EC2_PUBLIC_IP% "
+                        ssh -o StrictHostKeyChecking=no -i %KEY% ubuntu@%EC2_PUBLIC_IP% "
                             mkdir -p ~/issue-tracker
                             cd ~/issue-tracker
                             
