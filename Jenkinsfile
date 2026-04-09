@@ -45,21 +45,12 @@ pipeline {
             }
         }
 
-        stage('Frontend: Build & Lint') {
+        stage('Frontend: Docker Build') {
             steps {
                 withCredentials([string(credentialsId: 'vite-api-url', variable: 'VITE_URL')]) {
                     dir('issue-tracker-frontend') {
-                        sh 'npm install'
-                        sh "export VITE_API_BASE_URL=${VITE_URL} && npm run build"
+                        sh "docker build --build-arg VITE_API_BASE_URL=${VITE_URL} -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
                     }
-                }
-            }
-        }
-
-        stage('Frontend: Docker Build') {
-            steps {
-                dir('issue-tracker-frontend') {
-                    sh "docker build -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
                 }
             }
         }
