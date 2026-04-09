@@ -9,7 +9,7 @@ pipeline {
         // Prevent JVM OutOfMemory errors by limiting Maven memory
         MAVEN_OPTS = "-Xms256m -Xmx512m"
 
-        // AWS CONFIGURATION (Set these in Jenkins Global Environment Variables)
+        // AWS CONFIGURATION
         AWS_ACCOUNT_ID = "${env.AWS_ACCOUNT_ID}"
         AWS_REGION = "${env.AWS_REGION}"
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
@@ -26,8 +26,7 @@ pipeline {
         stage('Backend: Build & Test') {
             steps {
                 dir('issue-tracker-backend') {
-                    // Use mvnw.cmd for Windows agents
-                    bat 'mvnw.cmd clean package -DskipTests'
+                    sh './mvnw clean package -DskipTests'
                 }
             }
             post {
@@ -41,7 +40,7 @@ pipeline {
         stage('Backend: Docker Build') {
             steps {
                 dir('issue-tracker-backend') {
-                    bat "docker build -t %BACKEND_IMAGE%:latest -t %BACKEND_IMAGE%:%BUILD_NUMBER% ."
+                    sh "docker build -t ${BACKEND_IMAGE}:latest -t ${BACKEND_IMAGE}:${BUILD_NUMBER} ."
                 }
             }
         }
@@ -50,8 +49,8 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'vite-api-url', variable: 'VITE_URL')]) {
                     dir('issue-tracker-frontend') {
-                        bat 'npm install'
-                        bat "set VITE_API_BASE_URL=%VITE_URL% && npm run build"
+                        sh 'npm install'
+                        sh "export VITE_API_BASE_URL=${VITE_URL} && npm run build"
                     }
                 }
             }
@@ -60,7 +59,7 @@ pipeline {
         stage('Frontend: Docker Build') {
             steps {
                 dir('issue-tracker-frontend') {
-                    bat "docker build -t %FRONTEND_IMAGE%:latest -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ."
+                    sh "docker build -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
                 }
             }
         }
@@ -131,8 +130,8 @@ REDIS_PORT=${env.REDIS_PORT}
 """
                         writeFile file: '.env', text: envContent
                     }
-                    // Verify the file was created in the root
-                    bat 'dir .env'
+                    // Verify the file was created
+                    sh 'ls -la .env'
                 }
             }
         }
@@ -151,8 +150,8 @@ REDIS_PORT=${env.REDIS_PORT}
                         error "Deployment aborted: required .env values are missing or blank: ${missingComposeVars.join(', ')}"
                     }
                 }
-                bat 'docker-compose --env-file .env down --remove-orphans'
-                bat 'docker-compose --env-file .env up -d --build'
+                sh "docker-compose --env-file .env down --remove-orphans"
+                sh "docker-compose --env-file .env up -d --build"
             }
         }
 
@@ -162,9 +161,7 @@ REDIS_PORT=${env.REDIS_PORT}
                     string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    bat '''
-                    aws sts get-caller-identity
-                    '''
+                    sh "aws sts get-caller-identity"
                 }
             }
         }
@@ -175,20 +172,20 @@ REDIS_PORT=${env.REDIS_PORT}
                     string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    // Log in to ECR (Windows bat)
-                    bat "aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REGISTRY%"
+                    // Log in to ECR
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                     
                     // Tag and Push Backend
-                    bat "docker tag %BACKEND_IMAGE%:latest %ECR_REGISTRY%/%BACKEND_IMAGE%:latest"
-                    bat "docker tag %BACKEND_IMAGE%:latest %ECR_REGISTRY%/%BACKEND_IMAGE%:%BUILD_NUMBER%"
-                    bat "docker push %ECR_REGISTRY%/%BACKEND_IMAGE%:latest"
-                    bat "docker push %ECR_REGISTRY%/%BACKEND_IMAGE%:%BUILD_NUMBER%"
+                    sh "docker tag ${BACKEND_IMAGE}:latest ${ECR_REGISTRY}/${BACKEND_IMAGE}:latest"
+                    sh "docker tag ${BACKEND_IMAGE}:latest ${ECR_REGISTRY}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE}:latest"
+                    sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
                     
                     // Tag and Push Frontend
-                    bat "docker tag %FRONTEND_IMAGE%:latest %ECR_REGISTRY%/%FRONTEND_IMAGE%:latest"
-                    bat "docker tag %FRONTEND_IMAGE%:latest %ECR_REGISTRY%/%FRONTEND_IMAGE%:%BUILD_NUMBER%"
-                    bat "docker push %ECR_REGISTRY%/%FRONTEND_IMAGE%:latest"
-                    bat "docker push %ECR_REGISTRY%/%FRONTEND_IMAGE%:%BUILD_NUMBER%"
+                    sh "docker tag ${FRONTEND_IMAGE}:latest ${ECR_REGISTRY}/${FRONTEND_IMAGE}:latest"
+                    sh "docker tag ${FRONTEND_IMAGE}:latest ${ECR_REGISTRY}/${FRONTEND_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${ECR_REGISTRY}/${FRONTEND_IMAGE}:latest"
+                    sh "docker push ${ECR_REGISTRY}/${FRONTEND_IMAGE}:${BUILD_NUMBER}"
                 }
             }
         }
@@ -196,33 +193,20 @@ REDIS_PORT=${env.REDIS_PORT}
         stage('AWS: Deploy to EC2') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'KEY')]) {
-                    // 1. Fix permissions on the temporary key file (Required for Windows SSH)
-                    bat '''
-                        icacls %KEY% /inheritance:r
-                        icacls %KEY% /grant:r "Administrators:F"
-                    '''
+                    // Standard Linux SSH (Handles permissions automatically)
+                    sh "scp -o StrictHostKeyChecking=no -i ${KEY} .env docker-compose.prod.yml ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/"
                     
-                    // 2. Copy both .env and docker-compose.prod.yml to the EC2 using the protected key
-                    bat 'scp -o StrictHostKeyChecking=no -i %KEY% .env docker-compose.prod.yml ubuntu@%EC2_PUBLIC_IP%:~/issue-tracker/'
-                    
-                    // 3. Run remote commands to restart the app stack
-                    bat '''
-                        ssh -o StrictHostKeyChecking=no -i %KEY% ubuntu@%EC2_PUBLIC_IP% "
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ${KEY} ubuntu@${EC2_PUBLIC_IP} "
                             mkdir -p ~/issue-tracker
                             cd ~/issue-tracker
-                            
-                            # Log in to ECR on remote
-                            aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REGISTRY%
-                            
-                            # Set ECR_REGISTRY for docker-compose and pull
-                            export ECR_REGISTRY=%ECR_REGISTRY%
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            export ECR_REGISTRY=${ECR_REGISTRY}
                             docker-compose -f docker-compose.prod.yml --env-file .env pull
-                            
-                            # Restart stack
                             docker-compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
                             docker-compose -f docker-compose.prod.yml --env-file .env up -d
                         "
-                    '''
+                    """
                 }
             }
         }
