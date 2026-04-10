@@ -189,6 +189,10 @@ REDIS_PORT=${env.REDIS_PORT}
 
                     ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 << 'EOF'
                     export ECR_REGISTRY=043505372362.dkr.ecr.ap-south-1.amazonaws.com
+
+                    # 🔥 LOGIN TO ECR (VERY IMPORTANT)
+                    aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+
                     cd issue-tracker
                     docker-compose -f docker-compose.prod.yml down
                     docker-compose -f docker-compose.prod.yml pull
