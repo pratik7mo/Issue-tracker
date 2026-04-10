@@ -183,21 +183,17 @@ REDIS_PORT=${env.REDIS_PORT}
 
         stage('AWS: Deploy to EC2') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'KEY')]) {
-                    // Standard Linux SSH (Handles permissions automatically)
-                    sh "scp -o StrictHostKeyChecking=no -i ${KEY} .env docker-compose.prod.yml ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/"
-                    
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i ${KEY} ubuntu@${EC2_PUBLIC_IP} "
-                            mkdir -p ~/issue-tracker
-                            cd ~/issue-tracker
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            export ECR_REGISTRY=${ECR_REGISTRY}
-                            docker-compose -f docker-compose.prod.yml --env-file .env pull
-                            docker-compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
-                            docker-compose -f docker-compose.prod.yml --env-file .env up -d
-                        "
-                    """
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@13.201.97.103:~/issue-tracker/
+
+                    ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 << EOF
+                        cd issue-tracker
+                        docker compose down
+                        docker compose pull
+                        docker compose up -d
+                    EOF
+                    '''
                 }
             }
         }
