@@ -187,11 +187,11 @@ REDIS_PORT=${env.REDIS_PORT}
                     sh '''
                     scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@13.201.97.103:~/issue-tracker/
 
-                    ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 << EOF
-                        cd issue-tracker
-                        docker compose down
-                        docker compose pull
-                        docker compose up -d
+                    ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 << 'EOF'
+                    cd issue-tracker
+                    docker-compose down
+                    docker-compose pull
+                    docker-compose up -d
                     EOF
                     '''
                 }
