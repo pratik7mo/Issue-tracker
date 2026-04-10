@@ -189,9 +189,9 @@ REDIS_PORT=${env.REDIS_PORT}
 
                     ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 << 'EOF'
                     cd issue-tracker
-                    docker-compose down
-                    docker-compose pull
-                    docker-compose up -d
+                    docker-compose -f docker-compose.prod.yml down
+                    docker-compose -f docker-compose.prod.yml pull
+                    docker-compose -f docker-compose.prod.yml up -d
                     EOF
                     '''
                 }
