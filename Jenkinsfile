@@ -178,24 +178,28 @@ REDIS_PORT=${env.REDIS_PORT}
         stage('AWS: Deploy to EC2') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                        sh """
+                    withCredentials([usernamePassword(
+                        credentialsId: 'aws-creds',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )]) {
+
+                        sh '''
                         scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@13.201.97.103:~/issue-tracker/
 
-                        ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 << EOF
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        export ECR_REGISTRY=043505372362.dkr.ecr.ap-south-1.amazonaws.com
+                        ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 <<EOF
+export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=ap-south-1
+export ECR_REGISTRY=043505372362.dkr.ecr.ap-south-1.amazonaws.com
 
-                        # LOGIN TO ECR on EC2
-                        aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin \\\$ECR_REGISTRY
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin \$ECR_REGISTRY
 
-                        cd issue-tracker
-                        docker-compose -f docker-compose.prod.yml down
-                        docker-compose -f docker-compose.prod.yml pull
-                        docker-compose -f docker-compose.prod.yml up -d
-                        EOF
-                        """
+cd issue-tracker
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml up -d
+EOF
+                        '''
                     }
                 }
             }
