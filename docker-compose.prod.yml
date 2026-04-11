@@ -3,6 +3,8 @@ services:
     image: ${ECR_REGISTRY}/issue-tracker-backend:latest
     ports:
       - "9092:8080"
+    env_file:
+      - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=${DB_URL}
