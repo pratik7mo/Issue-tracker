@@ -109,6 +109,7 @@ pipeline {
                         }
 
                         def envContent = """
+ECR_REGISTRY=${ECR_REGISTRY}
 DB_URL=${DB_URL}
 DB_USERNAME=${DB_USER}
 DB_PASSWORD=${DB_PASS}
