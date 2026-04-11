@@ -198,6 +198,19 @@ aws ecr get-login-password --region ap-south-1 | docker login --username AWS --p
 cd issue-tracker
 docker-compose -f docker-compose.prod.yml down
 docker-compose -f docker-compose.prod.yml up -d
+
+echo "--- DIAGNOSTICS ---"
+echo "Container Status:"
+docker-compose -f docker-compose.prod.yml ps
+
+echo "Port Listeners:"
+sudo lsof -i -P -n | grep LISTEN || echo "No listeners found or lsof missing"
+
+echo "Internal Health Check (Frontend):"
+curl -I localhost:80 || echo "FAILED to reach localhost:80"
+
+echo "Internal Health Check (Backend):"
+curl -I localhost:9092 || echo "FAILED to reach localhost:9092"
 EOF
                         '''
                     }
