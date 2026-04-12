@@ -199,11 +199,12 @@ REDIS_PORT=${env.REDIS_PORT}
                     )]) {
 
                         sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} "mkdir -p ~/issue-tracker/"
                         scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/
 
                         ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} <<EOF
-export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+export AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION=ap-south-1
 export ECR_REGISTRY=043505372362.dkr.ecr.ap-south-1.amazonaws.com
 
