@@ -49,8 +49,11 @@ pipeline {
         stage('Frontend: Docker Build') {
             steps {
                 withCredentials([string(credentialsId: 'vite-api-url', variable: 'VITE_URL')]) {
-                    dir('issue-tracker-frontend') {
-                        sh "docker build --build-arg VITE_API_BASE_URL=${VITE_URL} -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
+                    script {
+                        def completeViteUrl = VITE_URL.endsWith('/api') ? VITE_URL : "${VITE_URL}/api"
+                        dir('issue-tracker-frontend') {
+                            sh "docker build --build-arg VITE_API_BASE_URL=${completeViteUrl} -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
+                        }
                     }
                 }
             }
@@ -109,6 +112,7 @@ pipeline {
                             error "Missing required Jenkins credentials values: ${missingSecrets.join(', ')}"
                         }
 
+                        def completeViteApi = VITE_API.endsWith('/api') ? VITE_API : "${VITE_API}/api"
                         def envContent = """
 ECR_REGISTRY=${ECR_REGISTRY}
 SPRING_DATASOURCE_URL=${DB_URL}
@@ -124,7 +128,7 @@ DB_USERNAME=${DB_USER}
 DB_PASSWORD=${DB_PASS}
 MAIL_USERNAME=${MAIL_USER}
 MAIL_PASSWORD=${MAIL_PASS}
-VITE_API_BASE_URL=${VITE_API}
+VITE_API_BASE_URL=${completeViteApi}
 REDIS_HOST=${env.REDIS_HOST}
 REDIS_PORT=${env.REDIS_PORT}
 
