@@ -14,6 +14,7 @@ pipeline {
         AWS_REGION = "${env.AWS_REGION}"
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         EC2_PUBLIC_IP = "${env.EC2_PUBLIC_IP}"
+        // IMPORTANT: Ensure 'vite-api-url' credential in Jenkins is set to: http://${EC2_PUBLIC_IP}:9092
     }
 
     stages {
@@ -193,10 +194,10 @@ REDIS_PORT=${env.REDIS_PORT}
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )]) {
 
-                        sh '''
-                        scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@13.201.97.103:~/issue-tracker/
+                        sh """
+                        scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/
 
-                        ssh -o StrictHostKeyChecking=no ubuntu@13.201.97.103 <<EOF
+                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} <<EOF
 export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION=ap-south-1
