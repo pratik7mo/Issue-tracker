@@ -222,7 +222,7 @@ curl -I localhost:80 || echo "FAILED to reach localhost:80"
 echo "Internal Health Check (Backend):"
 curl -I localhost:9092 || echo "FAILED to reach localhost:9092"
 EOF
-                        '''
+                        """
                     }
                 }
             }
