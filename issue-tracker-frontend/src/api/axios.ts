@@ -1,7 +1,26 @@
 import axios from 'axios';
 
+/** Backend serves REST under `/api/...`. Accepts host-only URLs from .env and appends `/api`. */
+function resolveApiBaseUrl(): string {
+  const fallback = 'http://localhost:9092/api';
+  const raw = import.meta.env.VITE_API_BASE_URL;
+  if (raw == null || String(raw).trim() === '') {
+    return fallback;
+  }
+  let base = String(raw).trim().replace(/\/+$/, '');
+  if (!base.endsWith('/api')) {
+    base += '/api';
+  }
+  return base;
+}
+
+const resolvedBaseUrl = resolveApiBaseUrl();
+
+// One-time log so deployed builds show the baked URL in DevTools Console (verify after hard refresh).
+console.info('[IssueTracker] API base URL:', resolvedBaseUrl);
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:9092/api',
+  baseURL: resolvedBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -17,6 +17,7 @@ const Login: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+      console.info('[Login] VITE_API_BASE_URL (build-time):', import.meta.env.VITE_API_BASE_URL);
       const res = await api.post('/auth/login', { email, password });
       // Corrected: backend returns token, name, email, role directly in res.data
       const { token, name, role } = res.data;
