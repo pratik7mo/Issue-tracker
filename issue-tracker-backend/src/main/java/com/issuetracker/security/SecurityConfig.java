@@ -31,12 +31,13 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exc -> exc
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             String path = request.getRequestURI();
                             response.getWriter()
-                                    .write(String.format("{\"message\": \"Unauthorized access to %%s. Please provide a valid JWT token\", \"path\": \"%%s\"}", path, path));
+                                    .write(String.format("{\"message\": \"Unauthorized access to %s. Please provide a valid JWT token\", \"path\": \"%s\"}", path, path));
                         }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
