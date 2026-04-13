@@ -26,6 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -38,6 +39,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        log.info("Login request received for email: {}", request.getEmail());
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
@@ -56,6 +58,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterRequestDto request) {
+        log.info("Register request received for email: {}", request.getEmail());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(
                     RegisterResponseDto.builder()
