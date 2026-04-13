@@ -13,6 +13,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
 const App: React.FC = () => {
+  console.log("[DEBUG] VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
   return (
     <AuthProvider>
       <BrowserRouter>
