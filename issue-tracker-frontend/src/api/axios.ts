@@ -4,7 +4,7 @@ import axios from 'axios';
  * Backend REST is context-agnostic. Nginx handles the /api prefix.
  */
 function resolveApiBaseUrl(): string {
-  const fallback = 'http://localhost:9092';
+  const fallback = '/api';
   const raw = import.meta.env.VITE_API_BASE_URL;
   if (raw == null || String(raw).trim() === '') {
     return fallback;
