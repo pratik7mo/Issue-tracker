@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -27,9 +28,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/auth/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/v3/api-docs/**"), 
+                                         AntPathRequestMatcher.antMatcher("/swagger-ui/**"), 
+                                         AntPathRequestMatcher.antMatcher("/swagger-ui.html")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v3/api-docs/**"),
+                                         AntPathRequestMatcher.antMatcher("/api/swagger-ui/**"),
+                                         AntPathRequestMatcher.antMatcher("/api/swagger-ui.html")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health"), 
+                                         AntPathRequestMatcher.antMatcher("/actuator/health/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/actuator/health"), 
+                                         AntPathRequestMatcher.antMatcher("/api/actuator/health/**")).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exc -> exc
@@ -38,7 +48,7 @@ public class SecurityConfig {
                             response.setContentType("application/json");
                             String path = request.getRequestURI();
                             response.getWriter()
-                                    .write(String.format("{\"message\": \"Unauthorized access to %s. Please provide a valid JWT token\", \"path\": \"%s\"}", path, path));
+                                    .write(String.format("{\"message\": \"[v2-fixed] Unauthorized access to %s. Please provide a valid JWT token\", \"path\": \"%s\"}", path, path));
                         }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
