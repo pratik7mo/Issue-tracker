@@ -1,13 +1,19 @@
 import axios from 'axios';
 
-/** Backend serves REST under `/api/...`. Accepts host-only URLs from .env and appends `/api`. */
+/**
+ * Backend REST is under `/api/...`.
+ * - Relative `/api` → same origin as the SPA (Nginx or Vite dev proxy forwards to Spring).
+ * - Absolute `http(s)://host:port/...` → direct to backend (append `/api` when host-only).
+ */
 function resolveApiBaseUrl(): string {
-  const fallback = 'http://localhost:9092/api';
   const raw = import.meta.env.VITE_API_BASE_URL;
   if (raw == null || String(raw).trim() === '') {
-    return fallback;
+    return '/api';
   }
   let base = String(raw).trim().replace(/\/+$/, '');
+  if (base.startsWith('/')) {
+    return base.endsWith('/api') ? base : `${base}/api`.replace(/\/+/g, '/');
+  }
   if (!base.endsWith('/api')) {
     base += '/api';
   }

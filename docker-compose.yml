@@ -26,8 +26,8 @@ services:
     build:
       context: ./issue-tracker-frontend
       args:
-        # Browser calls this URL; must be reachable from the client (not Docker service names).
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:9092/api}
+        # `/api` = same-origin via Nginx → backend. Override with full URL if API is on another host.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     ports:
       - "8085:80"
     depends_on:

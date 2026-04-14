@@ -14,7 +14,7 @@ pipeline {
         AWS_REGION = "${env.AWS_REGION}"
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         EC2_PUBLIC_IP = "${env.EC2_PUBLIC_IP}"
-        // IMPORTANT: Ensure 'vite-api-url' credential in Jenkins is set to: http://${EC2_PUBLIC_IP}:9092
+        // vite-api-url: use "/api" when Nginx proxies /api → backend (same host as SPA). Otherwise full URL e.g. http://${EC2_PUBLIC_IP}:9092
     }
 
     stages {
