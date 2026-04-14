@@ -48,12 +48,10 @@ pipeline {
 
         stage('Frontend: Docker Build') {
             steps {
-                withCredentials([string(credentialsId: 'vite-api-url', variable: 'VITE_URL')]) {
-                    script {
-                        def completeViteUrl = VITE_URL.endsWith('/api') ? VITE_URL : "${VITE_URL}/api"
-                        dir('issue-tracker-frontend') {
-                            sh "docker build --build-arg VITE_API_BASE_URL=${completeViteUrl} -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
-                        }
+                script {
+                    def completeViteUrl = "/api"
+                    dir('issue-tracker-frontend') {
+                        sh "docker build --build-arg VITE_API_BASE_URL=${completeViteUrl} -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
                     }
                 }
             }
@@ -128,7 +126,7 @@ DB_USERNAME=${DB_USER}
 DB_PASSWORD=${DB_PASS}
 MAIL_USERNAME=${MAIL_USER}
 MAIL_PASSWORD=${MAIL_PASS}
-VITE_API_BASE_URL=${completeViteApi}
+VITE_API_BASE_URL=/api
 REDIS_HOST=${env.REDIS_HOST}
 REDIS_PORT=${env.REDIS_PORT}
 
