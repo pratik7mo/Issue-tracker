@@ -27,22 +27,31 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/v3/api-docs/**", "/api/swagger-ui/**", "/api/swagger-ui.html").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers("/api/actuator/health", "/api/actuator/health/**").permitAll()
-                        .anyRequest().authenticated())
+
+                // ✅ FIXED BLOCK
+                .authorizeHttpRequests(auth -> {
+                        auth.requestMatchers("/api/auth/**").permitAll();
+                        auth.requestMatchers("/auth/**").permitAll();
+                        auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+                        auth.requestMatchers("/api/v3/api-docs/**", "/api/swagger-ui/**", "/api/swagger-ui.html").permitAll();
+                        auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
+                        auth.requestMatchers("/api/actuator/health", "/api/actuator/health/**").permitAll();
+                        auth.anyRequest().authenticated();
+                })
+
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .exceptionHandling(exc -> exc
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             String path = request.getRequestURI();
-                            response.getWriter()
-                                    .write(String.format("{\"message\": \"[v2-fixed] Unauthorized access to %s. Please provide a valid JWT token\", \"path\": \"%s\"}", path, path));
-                        }))
+                            response.getWriter().write(
+                                    String.format("{\"message\": \"Unauthorized access to %s. Please provide a valid JWT token\", \"path\": \"%s\"}", path, path)
+                            );
+                        })
+                )
+
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
