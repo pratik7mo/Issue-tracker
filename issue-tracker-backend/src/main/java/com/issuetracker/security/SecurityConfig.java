@@ -27,19 +27,12 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/auth/**")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/v3/api-docs/**"), 
-                                         AntPathRequestMatcher.antMatcher("/swagger-ui/**"), 
-                                         AntPathRequestMatcher.antMatcher("/swagger-ui.html")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v3/api-docs/**"),
-                                         AntPathRequestMatcher.antMatcher("/api/swagger-ui/**"),
-                                         AntPathRequestMatcher.antMatcher("/api/swagger-ui.html")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health"), 
-                                         AntPathRequestMatcher.antMatcher("/actuator/health/**")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/actuator/health"), 
-                                         AntPathRequestMatcher.antMatcher("/api/actuator/health/**")).permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/v3/api-docs/**", "/api/swagger-ui/**", "/api/swagger-ui.html").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/actuator/health", "/api/actuator/health/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exc -> exc

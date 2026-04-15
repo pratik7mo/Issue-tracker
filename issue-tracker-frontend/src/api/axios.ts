@@ -35,9 +35,14 @@ function isPublicAuthRequest(url?: string): boolean {
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token && !isPublicAuthRequest(config.url)) {
+  // Only add Bearer token if it exists and is not a public auth endpoint.
+  // Also guard against common "undefined" / "null" string bugs.
+  const isValidToken = token && token !== 'undefined' && token !== 'null';
+  
+  if (isValidToken && !isPublicAuthRequest(config.url)) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
   console.log(`[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
   return config;
 });
