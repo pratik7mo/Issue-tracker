@@ -6,26 +6,26 @@ pipeline {
         FRONTEND_IMAGE = "issue-tracker-frontend"
         REDIS_HOST = "redis"
         REDIS_PORT = "6379"
-        // Prevent JVM OutOfMemory errors by limiting Maven memory
         MAVEN_OPTS = "-Xms256m -Xmx512m"
-
+        
         // AWS CONFIGURATION
         AWS_ACCOUNT_ID = "${env.AWS_ACCOUNT_ID}"
         AWS_REGION = "${env.AWS_REGION}"
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         EC2_PUBLIC_IP = "${env.EC2_PUBLIC_IP}"
-        // vite-api-url: use "/api" when Nginx proxies /api → backend (same host as SPA). Otherwise full URL e.g. http://${EC2_PUBLIC_IP}:9092
     }
 
     stages {
         stage('Checkout') {
             steps {
+                echo "--- STAGE: CHECKOUT ---"
                 checkout scm
             }
         }
 
         stage('Backend: Build & Test') {
             steps {
+                echo "--- STAGE: BACKEND BUILD & TEST ---"
                 dir('issue-tracker-backend') {
                     sh './mvnw clean package -DskipTests'
                 }
@@ -38,56 +38,46 @@ pipeline {
             }
         }
 
-        stage('Backend: Docker Build') {
+        stage('Docker: Build Images') {
             steps {
-                dir('issue-tracker-backend') {
-                    sh "docker build -t ${BACKEND_IMAGE}:latest -t ${BACKEND_IMAGE}:${BUILD_NUMBER} ."
-                }
-            }
-        }
-
-        stage('Frontend: Docker Build') {
-            steps {
+                echo "--- STAGE: DOCKER BUILD ---"
                 script {
-                    def completeViteUrl = "/api"
+                    dir('issue-tracker-backend') {
+                        sh "docker build -t ${BACKEND_IMAGE}:latest -t ${BACKEND_IMAGE}:${BUILD_NUMBER} ."
+                    }
                     dir('issue-tracker-frontend') {
-                        sh "docker build --build-arg VITE_API_BASE_URL=${completeViteUrl} -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
+                        sh "docker build --build-arg VITE_API_BASE_URL=/api -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ."
                     }
                 }
             }
         }
 
-        stage('Verify Required Credentials') {
+        stage('Security: Verify Credentials') {
             steps {
+                echo "--- STAGE: VERIFY CREDENTIALS ---"
                 withCredentials([
-                    string(credentialsId: 'db-url', variable: 'DB_URL_CHECK'),
-                    string(credentialsId: 'db-username', variable: 'DB_USER_CHECK'),
-                    string(credentialsId: 'db-password', variable: 'DB_PASS_CHECK'),
-                    string(credentialsId: 'mail-username', variable: 'MAIL_USER_CHECK'),
-                    string(credentialsId: 'mail-password', variable: 'MAIL_PASS_CHECK'),
-                    string(credentialsId: 'vite-api-url', variable: 'VITE_API_CHECK')
+                    string(credentialsId: 'db-url', variable: 'DB_URL_VAL'),
+                    string(credentialsId: 'db-username', variable: 'DB_USER_VAL'),
+                    string(credentialsId: 'db-password', variable: 'DB_PASS_VAL'),
+                    string(credentialsId: 'mail-username', variable: 'MAIL_USER_VAL'),
+                    string(credentialsId: 'mail-password', variable: 'MAIL_PASS_VAL'),
+                    string(credentialsId: 'vite-api-url', variable: 'VITE_API_VAL')
                 ]) {
                     script {
                         def required = [
-                            'db-url'       : DB_URL_CHECK,
-                            'db-username'  : DB_USER_CHECK,
-                            'db-password'  : DB_PASS_CHECK,
-                            'mail-username': MAIL_USER_CHECK,
-                            'mail-password': MAIL_PASS_CHECK,
-                            'vite-api-url' : VITE_API_CHECK
+                            'db-url': DB_URL_VAL, 'db-username': DB_USER_VAL, 'db-password': DB_PASS_VAL,
+                            'mail-username': MAIL_USER_VAL, 'mail-password': MAIL_PASS_VAL, 'vite-api-url': VITE_API_VAL
                         ]
-                        def missing = required.findAll { id, value -> !value?.trim() }.keySet()
-                        if (!missing.isEmpty()) {
-                            error "Missing/blank Jenkins credential values for IDs: ${missing.join(', ')}"
-                        }
-                        echo "All required Jenkins credentials are present."
+                        def missing = required.findAll { k, v -> !v?.trim() }.keySet()
+                        if (missing) error "Missing Jenkins credentials: ${missing.join(', ')}"
                     }
                 }
             }
         }
 
-        stage('Create Env File') {
+        stage('Config: Create Environment') {
             steps {
+                echo "--- STAGE: CREATE ENV FILE ---"
                 withCredentials([
                     string(credentialsId: 'db-url', variable: 'DB_URL'),
                     string(credentialsId: 'db-username', variable: 'DB_USER'),
@@ -97,20 +87,6 @@ pipeline {
                     string(credentialsId: 'vite-api-url', variable: 'VITE_API')
                 ]) {
                     script {
-                        def requiredSecrets = [
-                            DB_URL      : DB_URL,
-                            DB_USERNAME : DB_USER,
-                            DB_PASSWORD : DB_PASS,
-                            MAIL_USERNAME: MAIL_USER,
-                            MAIL_PASSWORD: MAIL_PASS,
-                            VITE_API_BASE_URL: VITE_API
-                        ]
-                        def missingSecrets = requiredSecrets.findAll { key, value -> !value?.trim() }.keySet()
-                        if (!missingSecrets.isEmpty()) {
-                            error "Missing required Jenkins credentials values: ${missingSecrets.join(', ')}"
-                        }
-
-                        def completeViteApi = VITE_API.endsWith('/api') ? VITE_API : "${VITE_API}/api"
                         def envContent = """
 ECR_REGISTRY=${ECR_REGISTRY}
 SPRING_DATASOURCE_URL=${DB_URL}
@@ -119,66 +95,33 @@ SPRING_DATASOURCE_PASSWORD=${DB_PASS}
 SPRING_MAIL_USERNAME=${MAIL_USER}
 SPRING_MAIL_PASSWORD=${MAIL_PASS}
 SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
-SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
-SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
 DB_URL=${DB_URL}
 DB_USERNAME=${DB_USER}
 DB_PASSWORD=${DB_PASS}
 MAIL_USERNAME=${MAIL_USER}
 MAIL_PASSWORD=${MAIL_PASS}
 VITE_API_BASE_URL=/api
-REDIS_HOST=${env.REDIS_HOST}
-REDIS_PORT=${env.REDIS_PORT}
-
+REDIS_HOST=${REDIS_HOST}
+REDIS_PORT=${REDIS_PORT}
 """
                         writeFile file: '.env', text: envContent
+                        sh 'ls -la .env'
                     }
-                    // Verify the file was created
-                    sh 'ls -la .env'
-                }
-            }
-        }
-
-
-        stage('Deploy Stack (Local)') {
-            when {
-                expression { env.DEPLOY_LOCAL == 'true' }
-            }
-            steps {
-                script {
-                    def envVars = readProperties file: '.env'
-                    def requiredComposeVars = ['DB_URL', 'DB_USERNAME', 'DB_PASSWORD', 'MAIL_USERNAME', 'MAIL_PASSWORD']
-                    def missingComposeVars = requiredComposeVars.findAll { key -> !envVars[key]?.trim() }
-                    if (!missingComposeVars.isEmpty()) {
-                        error "Deployment aborted: required .env values are missing or blank: ${missingComposeVars.join(', ')}"
-                    }
-                }
-                sh "docker-compose --env-file .env down --remove-orphans"
-                sh "docker-compose --env-file .env up -d --build"
-            }
-        }
-
-        stage('Test AWS') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "aws sts get-caller-identity"
                 }
             }
         }
 
         stage('AWS: Push to ECR') {
             steps {
+                echo "--- STAGE: ECR PUSH ---"
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    // Log in to ECR
                     sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                     
-                    // Tag and Push Backend
                     sh "docker tag ${BACKEND_IMAGE}:latest ${ECR_REGISTRY}/${BACKEND_IMAGE}:latest"
                     sh "docker tag ${BACKEND_IMAGE}:latest ${ECR_REGISTRY}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
                     sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE}:latest"
                     sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
                     
-                    // Tag and Push Frontend
                     sh "docker tag ${FRONTEND_IMAGE}:latest ${ECR_REGISTRY}/${FRONTEND_IMAGE}:latest"
                     sh "docker tag ${FRONTEND_IMAGE}:latest ${ECR_REGISTRY}/${FRONTEND_IMAGE}:${BUILD_NUMBER}"
                     sh "docker push ${ECR_REGISTRY}/${FRONTEND_IMAGE}:latest"
@@ -189,41 +132,26 @@ REDIS_PORT=${env.REDIS_PORT}
 
         stage('AWS: Deploy to EC2') {
             steps {
+                echo "--- STAGE: EC2 DEPLOYMENT ---"
                 sshagent(['ec2-ssh-key']) {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'aws-creds',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )]) {
-
+                    withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} "mkdir -p ~/issue-tracker/"
+                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} \"mkdir -p ~/issue-tracker/\"
                         scp -o StrictHostKeyChecking=no .env docker-compose.prod.yml ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/
-
                         ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} <<EOF
-export AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
-export AWS_DEFAULT_REGION=ap-south-1
-export ECR_REGISTRY=043505372362.dkr.ecr.ap-south-1.amazonaws.com
-
-aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin \$ECR_REGISTRY
-
-cd issue-tracker
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d
-
-echo "--- DIAGNOSTICS ---"
-echo "Container Status:"
-docker-compose -f docker-compose.prod.yml ps
-
-echo "Port Listeners:"
-sudo lsof -i -P -n | grep LISTEN || echo "No listeners found or lsof missing"
-
-echo "Internal Health Check (Frontend):"
-curl -I localhost:80 || echo "FAILED to reach localhost:80"
-
-echo "Internal Health Check (Backend):"
-curl -I localhost:9092 || echo "FAILED to reach localhost:9092"
+                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                            export AWS_DEFAULT_REGION=${AWS_REGION}
+                            export ECR_REGISTRY=${ECR_REGISTRY}
+                            
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            
+                            cd ~/issue-tracker
+                            docker-compose -f docker-compose.prod.yml down
+                            docker-compose -f docker-compose.prod.yml up -d
+                            
+                            echo \"Deployment Diagnostic:\"
+                            docker-compose -f docker-compose.prod.yml ps
 EOF
                         """
                     }
@@ -231,8 +159,9 @@ EOF
             }
         }
 
-        stage('Clean Workspace') {
+        stage('Cleanup') {
             steps {
+                echo "--- STAGE: CLEANUP ---"
                 cleanWs()
             }
         }
@@ -241,11 +170,9 @@ EOF
     post {
         always {
             echo 'Finalizing pipeline execution...'
-            // TEMPORARY: Commented out for debugging so you can manually check the .env file
-            // bat 'if exist .env del .env'
         }
         success {
-            echo 'Pipeline completed successfully and stack deployed!'
+            echo 'Pipeline completed successfully!'
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
