@@ -147,11 +147,19 @@ REDIS_PORT=${REDIS_PORT}
                             aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                             
                             cd ~/issue-tracker
+                            
+                            echo \"Deployment Diagnostic: Checking Memory Status\"
+                            free -h
+                            
+                            echo \"--- CLEANING DOCKER JUNK ---\"
+                            docker system prune -af
+                            
                             docker-compose -f docker-compose.prod.yml down
                             docker-compose -f docker-compose.prod.yml up -d
                             
-                            echo \"Deployment Diagnostic:\"
+                            echo \"Deployment Diagnostic: Post-Start Status\"
                             docker-compose -f docker-compose.prod.yml ps
+                            free -h
 EOF
                         """
                     }

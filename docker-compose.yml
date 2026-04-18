@@ -7,36 +7,38 @@ services:
       - "9092:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=${DB_URL:?DB_URL is required}
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME:?DB_USERNAME is required}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
-      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:?MAIL_USERNAME is required}
-      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:?MAIL_PASSWORD is required}
+      - JAVA_OPTS=-Xms128m -Xmx256m
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
       - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
       - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
-
+    mem_limit: 350m
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       redis:
         condition: service_started
 
-
   frontend:
     build:
       context: ./issue-tracker-frontend
       args:
-        # `/api` = same-origin via Nginx → backend. Override with full URL if API is on another host.
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     ports:
       - "8085:80"
+    mem_limit: 100m
     depends_on:
       - backend
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "6380:6379"
+    mem_limit: 150m
 
   prometheus:
     image: prom/prometheus:latest
@@ -47,6 +49,8 @@ services:
       - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=1d'
+    mem_limit: 150m
     depends_on:
       - backend
 
@@ -59,5 +63,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+    mem_limit: 200m
     depends_on:
       - prometheus

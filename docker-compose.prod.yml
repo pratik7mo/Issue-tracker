@@ -7,8 +7,10 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xms128m -Xmx256m
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    mem_limit: 350m
     depends_on:
       - redis
 
@@ -16,11 +18,14 @@ services:
     image: ${ECR_REGISTRY}/issue-tracker-frontend:latest
     ports:
       - "80:80"
+    mem_limit: 100m
     depends_on:
       - backend
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
+    mem_limit: 150m
 
   prometheus:
     image: prom/prometheus:latest
@@ -31,6 +36,8 @@ services:
       - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=1d'
+    mem_limit: 150m
     depends_on:
       - backend
 
@@ -43,5 +50,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+    mem_limit: 200m
     depends_on:
       - prometheus
