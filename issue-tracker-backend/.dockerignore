@@ -1,6 +1,5 @@
-target/*.jar
+target/*
 !target/issue-tracker-backend-*.jar
-target
 *.log
 .mvn
 mvnw
