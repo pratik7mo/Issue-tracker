@@ -115,17 +115,19 @@ REDIS_PORT=${REDIS_PORT}
             steps {
                 echo "--- STAGE: ECR PUSH ---"
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                    sh '''
+                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
                     
-                    sh "docker tag ${BACKEND_IMAGE}:latest ${ECR_REGISTRY}/${BACKEND_IMAGE}:latest"
-                    sh "docker tag ${BACKEND_IMAGE}:latest ${ECR_REGISTRY}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE}:latest"
-                    sh "docker push ${ECR_REGISTRY}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
+                    docker tag $BACKEND_IMAGE:latest $ECR_REGISTRY/$BACKEND_IMAGE:latest
+                    docker tag $BACKEND_IMAGE:latest $ECR_REGISTRY/$BACKEND_IMAGE:$BUILD_NUMBER
+                    docker push $ECR_REGISTRY/$BACKEND_IMAGE:latest
+                    docker push $ECR_REGISTRY/$BACKEND_IMAGE:$BUILD_NUMBER
                     
-                    sh "docker tag ${FRONTEND_IMAGE}:latest ${ECR_REGISTRY}/${FRONTEND_IMAGE}:latest"
-                    sh "docker tag ${FRONTEND_IMAGE}:latest ${ECR_REGISTRY}/${FRONTEND_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${ECR_REGISTRY}/${FRONTEND_IMAGE}:latest"
-                    sh "docker push ${ECR_REGISTRY}/${FRONTEND_IMAGE}:${BUILD_NUMBER}"
+                    docker tag $FRONTEND_IMAGE:latest $ECR_REGISTRY/$FRONTEND_IMAGE:latest
+                    docker tag $FRONTEND_IMAGE:latest $ECR_REGISTRY/$FRONTEND_IMAGE:$BUILD_NUMBER
+                    docker push $ECR_REGISTRY/$FRONTEND_IMAGE:latest
+                    docker push $ECR_REGISTRY/$FRONTEND_IMAGE:$BUILD_NUMBER
+                    '''
                 }
             }
         }
@@ -135,33 +137,29 @@ REDIS_PORT=${REDIS_PORT}
                 echo "--- STAGE: EC2 DEPLOYMENT ---"
                 sshagent(['ec2-ssh-key']) {
                     withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} \"mkdir -p ~/issue-tracker/\"
-                        scp -r -o StrictHostKeyChecking=no .env docker-compose.prod.yml prometheus.yml grafana ubuntu@${EC2_PUBLIC_IP}:~/issue-tracker/
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} <<EOF
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                            export AWS_DEFAULT_REGION=${AWS_REGION}
-                            export ECR_REGISTRY=${ECR_REGISTRY}
-                            
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@$EC2_PUBLIC_IP "mkdir -p ~/issue-tracker/"
+                        scp -r -o StrictHostKeyChecking=no .env docker-compose.prod.yml prometheus.yml grafana ubuntu@$EC2_PUBLIC_IP:~/issue-tracker/
+                        
+                        ssh -o StrictHostKeyChecking=no ubuntu@$EC2_PUBLIC_IP "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=$AWS_REGION ECR_REGISTRY=$ECR_REGISTRY bash -s" <<'EOF'
+                            aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
                             
                             cd ~/issue-tracker
                             
-                            echo \"Deployment Diagnostic: Checking Memory Status\"
+                            echo "Deployment Diagnostic: Checking Memory Status"
                             free -h
                             
-                            echo \"--- CLEANING DOCKER JUNK ---\"
+                            echo "--- CLEANING DOCKER JUNK ---"
                             docker system prune -af
                             
                             docker-compose -f docker-compose.prod.yml down
                             docker-compose -f docker-compose.prod.yml up -d
                             
-                            echo \"Deployment Diagnostic: Post-Start Status\"
+                            echo "Deployment Diagnostic: Post-Start Status"
                             docker-compose -f docker-compose.prod.yml ps
                             free -h
 EOF
-                        """
+                        '''
                     }
                 }
             }
