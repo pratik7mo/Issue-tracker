@@ -82,8 +82,8 @@ This guide presents 30 real-world, scenario-based interview questions and answer
 **21. Describe the difference between your current deployment and a Zero-Downtime strategy.**
 *   **Experience-First Answer**: My current setup uses `docker-compose down && up`, which causes a few seconds of downtime. For zero-downtime, I would implement **Blue-Green Deployment** or use `docker-compose up -d --no-deps --build <service_name>`, which restarts services individually without stopping the entire stack.
 
-**22. Scenario: Your SCP transfer fails with "Broken Pipe". How do you troubleshoot?**
-*   **Experience-First Answer**: I first check if the EC2 instance is reachable (SecGroup/IP). If it's a timeout, it might be due to a large file transfer. I would check the SSH configuration on the host (`ClientAliveInterval`) or simplify the transfer by only moving the zipped configuration files.
+**22. Scenario: Your Jenkins deployment is successful, but your application URL is no longer reachable. What do you check first?**
+*   **Experience-First Answer**: Beyond service health, I check the **AWS EC2 Public IP**. If the instance was stopped and restarted without an **Elastic IP**, the public IP changes, breaking our DNS and CI/CD parameters. I solved this by allocating and associating an Elastic IP. This ensures our production endpoints and Jenkins environment variables remain fixed, eliminating manual reconfiguration and downtime.
 
 **23. How do you handle EC2 Security Groups in your CI/CD flow?**
 *   **Experience-First Answer**: The EC2 instance must have an Inbound rule allowing **Port 22 (SSH)** from the Jenkins Server's static IP. For the application, I open **Port 80/443** (HTTP/S) to the public, while keeping database ports (5432) restricted to the internal Docker network only.
