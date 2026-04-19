@@ -142,6 +142,9 @@ REDIS_PORT=${REDIS_PORT}
                         scp -r -o StrictHostKeyChecking=no .env docker-compose.prod.yml prometheus.yml grafana ubuntu@$EC2_PUBLIC_IP:~/issue-tracker/
                         
                         ssh -o StrictHostKeyChecking=no ubuntu@$EC2_PUBLIC_IP "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=$AWS_REGION ECR_REGISTRY=$ECR_REGISTRY bash -s" <<'EOF'
+                            # Stop if any command fails
+                            set -e
+                            
                             aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
                             
                             cd ~/issue-tracker
@@ -152,6 +155,7 @@ REDIS_PORT=${REDIS_PORT}
                             echo "--- CLEANING DOCKER JUNK ---"
                             docker system prune -af
                             
+                            echo "--- RESTARTING CONTAINERS ---"
                             docker-compose -f docker-compose.prod.yml down
                             docker-compose -f docker-compose.prod.yml up -d
                             
