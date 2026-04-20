@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Collections;
 
 @RestController
-@RequestMapping("/api/issues")
+@RequestMapping("/issues")
 @RequiredArgsConstructor
 public class IssueController {
 

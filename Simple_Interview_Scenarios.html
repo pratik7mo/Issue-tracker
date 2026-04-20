@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30 DevOps Interview Scenarios - ELI5 Edition</title>
+    <style>
+        :root {
+            --primary: #2d3436;
+            --accent: #0984e3;
+            --bg: #f5f6fa;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: var(--accent);
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #636e72;
+            margin-bottom: 40px;
+        }
+
+        .qa-row {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+            border-bottom: 1px solid #efefef;
+            padding-bottom: 20px;
+        }
+
+        .question {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #2d3436;
+        }
+
+        .technical {
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .eli5 {
+            background: #e1f5fe;
+            border-left: 5px solid var(--accent);
+            padding: 15px;
+            border-radius: 0 5px 5px 0;
+            font-style: italic;
+            font-size: 1em;
+        }
+
+        .eli5 b { color: var(--accent); }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border: none; max-width: 100%; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interview Scenarios: ELI5 Edition</h1>
+        <div class="subtitle">Issue Tracking System | Role Explanations for Everyone</div>
+
+        <!-- STAGE 1 HIGHLIGHT -->
+        <div class="qa-row">
+            <div class="question">Q1: Why couldn't we see the "boxes" in Jenkins initially?</div>
+            <div class="technical"><b>Technical Fix:</b> Refactored from a script with logic gaps into a strictly defined <b>Declarative Pipeline</b>. This allows the Jenkins UI (Blue Ocean) to correctly map steps to visualizations.</div>
+            <div class="eli5"><b>ELI5:</b> "It's like a robot trying to cook a meal without a recipe on the screen. I updated the instructions so now the robot (Jenkins) shows us a clear digital checklist as it cooks every part of our app."</div>
+        </div>
+
+        <div class="qa-row">
+            <div class="question">Q2: What is Docker's role in this project?</div>
+            <div class="technical"><b>Technical Fix:</b> Implemented containerization to bundle the application with its dependencies (JVM, libraries) into a portable image.</div>
+            <div class="eli5"><b>ELI5:</b> "Docker is like a <b>shipping container</b>. We pack our software into it so it stays safe and works perfectly, whether it's on a truck, a ship, or an airplane (different computers)."</div>
+        </div>
+
+        <div class="qa-row">
+            <div class="question">Q3: How do you handle production security?</div>
+            <div class="technical"><b>Technical Fix:</b> Used Jenkins credentials and <code>withCredentials</code> to inject secrets into a <code>.env</code> file at runtime.</div>
+            <div class="eli5"><b>ELI5:</b> "Instead of writing the door-password in a book everyone can see, the robot (Jenkins) only whispers it to the app right before it opens the door to the public."</div>
+        </div>
+
+        <div class="qa-row">
+            <div class="question">Q4: Why use Nginx as a reverse proxy?</div>
+            <div class="technical"><b>Technical Fix:</b> Configured Nginx to proxy <code>/api</code> requests internally, bypassing CORS issues and simplifying client-side routing.</div>
+            <div class="eli5"><b>ELI5:</b> "Nginx is like a <b>receptionist</b>. Instead of you having to search for every office in the building, you just tell the receptionist what you need, and they handle the directions for you."</div>
+        </div>
+
+        <div style="text-align: center; padding: 20px; color: #999;font-size: 0.9em; background: #fafafa; border-radius: 10px;">
+            <b>Full 30-Question ELI5 set available in the Markdown file.</b> This preview highlights the most critical role understandings.
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; color: #aaa; font-size: 0.8em;">
+            Open this file in browser and Ctrl+P to save as PDF.
+        </div>
+    </div>
+</body>
+</html>

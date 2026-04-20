@@ -1,4 +1,4 @@
-package com.issuetracker.repo;
+package com.issuetracker.repo.jpa;
 
 import com.issuetracker.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

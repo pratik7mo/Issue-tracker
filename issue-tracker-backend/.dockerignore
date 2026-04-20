@@ -1,0 +1,14 @@
+target/*
+!target/issue-tracker-backend-*.jar
+*.log
+.mvn
+mvnw
+mvnw.cmd
+.git
+.gitignore
+.idea
+.env
+.env.development
+.env.prod
+Dockerfile
+HELP.md

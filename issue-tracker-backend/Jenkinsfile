@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        BACKEND_IMAGE = "issue-tracker-backend"
+        DB_URL = credentials('db-url')
+        DB_USERNAME = credentials('db-username')
+        DB_PASSWORD = credentials('db-password')
+        MAIL_USERNAME = credentials('mail-username')
+        MAIL_PASSWORD = credentials('mail-password')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Backend: Build & Test') {
+            steps {
+                // Use mvnw.cmd for Windows agents
+                bat 'mvnw.cmd clean package -DskipTests'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+                }
+            }
+        }
+
+        stage('Backend: Docker Build') {
+            steps {
+                // Use %VAR% syntax for environment variables in bat
+                bat "docker build -t %BACKEND_IMAGE%:%BUILD_NUMBER% ."
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                bat """
+                docker stop backend || true
+                docker rm backend || true
+
+                docker run -d -p 8080:8080 \
+                --network issue-tracker_default \
+                -e DB_URL=%DB_URL% \
+                -e DB_USERNAME=%DB_USERNAME% \
+                -e DB_PASSWORD=%DB_PASSWORD% \
+                -e MAIL_USERNAME=%MAIL_USERNAME% \
+                -e MAIL_PASSWORD=%MAIL_PASSWORD% \
+                --name backend %BACKEND_IMAGE%:%BUILD_NUMBER%
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Backend build and deployment successful!'
+        }
+        failure {
+            echo 'Backend build or deployment failed.'
+        }
+    }
+}
+
+
+
+
